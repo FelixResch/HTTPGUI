@@ -4,7 +4,7 @@ import at.resch.html.HTMLAttribute;
 import at.resch.html.HTMLObject;
 
 
-public class HTMLElement extends HTMLObject {
+public abstract class HTMLElement extends HTMLObject {
 	
 	private static final String ATTRIB_ACCESS_KEY = "accesskey";
 	private static final String ATTRIB_CLASS = "class";

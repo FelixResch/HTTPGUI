@@ -7,12 +7,10 @@ import java.util.List;
 import at.resch.html.elements.BODY;
 import at.resch.html.elements.DOCTYPE;
 import at.resch.html.elements.H1;
-import at.resch.html.elements.H2;
 import at.resch.html.elements.HEAD;
 import at.resch.html.elements.HTML;
 import at.resch.html.elements.HTMLDocument;
 import at.resch.html.elements.HTMLElement;
-import at.resch.html.elements.Heading;
 import at.resch.html.elements.STYLE;
 import at.resch.html.elements.TITLE;
 
@@ -32,6 +30,10 @@ public class HTMLObject {
 			else
 				this.children.add(object);
 		}
+	}
+
+	public List<Object> getChildren() {
+		return children;
 	}
 
 	public String getTagName() {
@@ -75,6 +77,10 @@ public class HTMLObject {
 				return next;
 		}
 		return null;
+	}
+	
+	public void addObject(Object a) {
+		children.add(a);
 	}
 
 	public String renderHTML() {
