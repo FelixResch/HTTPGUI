@@ -9,6 +9,7 @@ import at.resch.html.annotations.Page;
 import at.resch.html.elements.CODE;
 import at.resch.html.elements.H1;
 import at.resch.html.elements.HTMLElement;
+import at.resch.html.server.Session;
 
 @Page(title="Hello World")
 @Location(path="/test")
@@ -22,6 +23,11 @@ public class TestPage {
 		html.setId("page_main");
 		html.addObject(new H1("Hello World"));
 		html.addObject("This is a Test for the very simple HTML Compiler!");
+		if(Session.getCurrent().get("welcome.string") != null) {
+			html.addObject(Session.getCurrent().get("welcome.string"));
+		} else {
+			html.addObject("Please visit Welcome Page first!");
+		}
 	}
 	
 	@Content(parent=CODE.class)

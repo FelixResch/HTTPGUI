@@ -67,8 +67,6 @@ import at.resch.html.test.TestPage;
 import at.resch.html.test.TestServerPage;
 
 public class HTTPGUIServer {
-
-	private static Session session;
 	
 	private static final String SECURITY_TOKEN = "ASuas55f3edfjfg55hert4ykzt5b4df54hdf";
 	
@@ -96,7 +94,7 @@ public class HTTPGUIServer {
 						+ entityContent.length);
 			}
 
-			String html = session.getPage(target, browser);
+			String html = Session.create().getPage(target, browser);
 			response.setEntity(new StringEntity(html, ContentType.TEXT_HTML));
 
 			response.setStatusCode(200);
@@ -174,8 +172,7 @@ public class HTTPGUIServer {
 		int port = 8080;
 
 		listAllClasses();
-		
-		session = Session.create();
+		Session session = Session.getCurrent();
 		session.addLocatable(new TestPage());
 
 		HttpProcessor httpproc = HttpProcessorBuilder.create()
@@ -247,6 +244,7 @@ public class HTTPGUIServer {
 
 					// Start worker thread
 					Thread t = new WorkerThread(this.httpService, conn);
+					t.setName(socket.getInetAddress().toString());
 					t.setDaemon(true);
 					t.start();
 				} catch (InterruptedIOException ex) {
@@ -275,7 +273,8 @@ public class HTTPGUIServer {
 
 		@Override
 		public void run() {
-			// System.out.println("New connection thread");
+			if(!Session.exists())
+				Session.create();
 			HttpContext context = new BasicHttpContext(null);
 			try {
 				while (!Thread.interrupted() && this.conn.isOpen()) {

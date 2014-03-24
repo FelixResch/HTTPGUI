@@ -219,7 +219,7 @@ public class HTMLCompiler {
 				for (Object e : ((HTMLElement) o).getChildren()) {
 					if (e instanceof BODY) {
 						BODY body = (BODY) e;
-						((BODY) e).addObject(new Warning("You are using an uncompatible Browser"));
+						((BODY) e).addObject(new Warning("You are using an incompatible Browser"));
 					}
 				}
 			}

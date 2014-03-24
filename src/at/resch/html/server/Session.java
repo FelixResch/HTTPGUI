@@ -4,7 +4,11 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.logging.LoggingMXBean;
 
+import org.apache.commons.logging.Log;
 import org.w3c.dom.html.HTMLCollection;
 
 import com.google.common.base.Objects;
@@ -23,10 +27,14 @@ import at.resch.html.enums.Browsers;
 public class Session {
 
 	private final HashMap<String, Locatable> pages = new HashMap<>();
+	private final HashMap<String, Object> store = new HashMap<>();
 
 	private static final HashMap<String, Class<?>> locatablesClasses = new HashMap<>();
 	private static final HashMap<String, Class<?>> pageClasses = new HashMap<>();
 	private static final HashMap<String, Class<?>> partialClasses = new HashMap<>();
+	private static final HashMap<String, Session> sessions = new HashMap<>();
+	
+	private static Logger logger = Logger.getLogger("Session");
 
 	public static void addLocatable(String name, Class<?> locatableClass) {
 		if (locatableClass.isAnnotationPresent(Location.class)) {
@@ -277,9 +285,24 @@ public class Session {
 
 	private Session() {
 	}
+	
+	public static boolean exists() {
+		return sessions.containsKey(Thread.currentThread().getName());
+	}
 
+	public static Session getCurrent() {
+		if(exists())
+			return sessions.get(Thread.currentThread().getName());
+		return create();
+	}
+	
 	public static Session create() {
+		if(sessions.containsKey(Thread.currentThread().getName())) {
+			return sessions.get(Thread.currentThread().getName());
+		}
+		logger.log(Level.INFO, "Creating new Session for: " + Thread.currentThread().getName());
 		Session s = new Session();
+		s.store("client.address", Thread.currentThread().getName());
 		Iterator<String> iterator = locatablesClasses.keySet().iterator();
 		while(iterator.hasNext()) {
 			String key = iterator.next();
@@ -292,6 +315,7 @@ public class Session {
 			}
 			
 		}
+		sessions.put(Thread.currentThread().getName(), s);
 		return s;
 	}
 
@@ -318,6 +342,16 @@ public class Session {
 			return HTMLCompiler.compileObject(pages.get(name).getO(), browser);
 		}
 		return HTMLCompiler.compileObject(getPageInstance("sep", name), browser);
+	}
+	
+	public void store(String name, Object object) {
+		store.put(name, object);
+	}
+	
+	public Object get(String name) {
+		if(store.containsKey(name))
+			return store.get(name);
+		return null;
 	}
 
 	private class Locatable {

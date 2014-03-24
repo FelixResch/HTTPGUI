@@ -27,6 +27,8 @@ public class WelcomePage {
 		A link = new A("Bitte hier klicken");
 		link.setHref("/test");
 		html.addObject(link);
+		html.addObject(Session.getCurrent().get("client.address"));
+		Session.getCurrent().store("welcome.string", "You have been welcomed");
 	}
 	
 	@Content
