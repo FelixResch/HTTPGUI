@@ -233,7 +233,6 @@ public class HTTPGUIServer {
 
 		@Override
 		public void run() {
-			// System.out.println("New connection thread");
 			HttpContext context = new BasicHttpContext(null);
 			try {
 				while (!Thread.interrupted() && this.conn.isOpen()) {
