@@ -13,6 +13,7 @@ import at.resch.html.HTMLCompiler;
 import at.resch.html.annotations.Location;
 import at.resch.html.annotations.Page;
 import at.resch.html.annotations.Partial;
+import at.resch.html.annotations.Priority;
 import at.resch.html.components.StandardErrorPage;
 import at.resch.html.elements.BR;
 import at.resch.html.elements.DIV;
@@ -29,7 +30,27 @@ public class Session {
 
 	public static void addLocatable(String name, Class<?> locatableClass) {
 		if (locatableClass.isAnnotationPresent(Location.class)) {
-			locatablesClasses.put(name, locatableClass);
+			if(locatablesClasses.containsKey(name)) {
+				if(locatableClass.isAnnotationPresent(Priority.class)){
+					Class<?> tmp = locatablesClasses.get(name);
+					if(!tmp.isAnnotationPresent(Priority.class)) {
+						System.err.println("Overwriting unprioritised Class" + tmp.getCanonicalName() + " with " + locatableClass.getCanonicalName());
+						locatablesClasses.put(name, locatableClass);
+					} else {
+						Priority newClass, oldClass;
+						newClass = locatableClass.getAnnotation(Priority.class);
+						oldClass = tmp.getAnnotation(Priority.class);
+						if(newClass.value().compareTo(oldClass.value()) > 0) {
+							System.out.println("Overwriting Class " + tmp.getCanonicalName() + " with " + locatableClass.getCanonicalName());
+						} else {
+							System.out.println("Omitting Class: " + locatableClass.getCanonicalName());
+						}
+					}
+				} else {
+					System.out.println("Omitting Class: " + locatableClass.getCanonicalName() + "! Identifier " + name + " already mapped.\n(Use at.resch.html.annotations.Priority to define overwriting behaviour)");
+				}
+			} else
+				locatablesClasses.put(name, locatableClass);
 		}
 	}
 
@@ -88,7 +109,27 @@ public class Session {
 
 	public static void addPage(String name, Class<?> pageClass) {
 		if (pageClass.isAnnotationPresent(Page.class)) {
-			pageClasses.put(name, pageClass);
+			if(pageClasses.containsKey(name)) {
+				if(pageClass.isAnnotationPresent(Priority.class)){
+					Class<?> tmp = pageClasses.get(name);
+					if(!tmp.isAnnotationPresent(Priority.class)) {
+						System.err.println("Overwriting unprioritised Class" + tmp.getCanonicalName() + " with " + pageClass.getCanonicalName());
+						pageClasses.put(name, pageClass);
+					} else {
+						Priority newClass, oldClass;
+						newClass = pageClass.getAnnotation(Priority.class);
+						oldClass = tmp.getAnnotation(Priority.class);
+						if(newClass.value().compareTo(oldClass.value()) > 0) {
+							System.out.println("Overwriting Class " + tmp.getCanonicalName() + " with " + pageClass.getCanonicalName());
+						} else {
+							System.out.println("Omitting Class: " + pageClass.getCanonicalName());
+						}
+					}
+				} else {
+					System.out.println("Omitting Class: " + pageClass.getCanonicalName() + "! Identifier " + name + " already mapped.\n(Use at.resch.html.annotations.Priority to define overwriting behaviour)");
+				}
+			} else
+				pageClasses.put(name, pageClass);
 		}
 	}
 
@@ -148,7 +189,27 @@ public class Session {
 
 	public static void addPartial(String name, Class<?> partialClass) {
 		if (partialClass.isAnnotationPresent(Partial.class)) {
-			partialClasses.put(name, partialClass);
+			if(partialClasses.containsKey(name)) {
+				if(partialClass.isAnnotationPresent(Priority.class)){
+					Class<?> tmp = partialClasses.get(name);
+					if(!tmp.isAnnotationPresent(Priority.class)) {
+						System.err.println("Overwriting unprioritised Class" + tmp.getCanonicalName() + " with " + partialClass.getCanonicalName());
+						partialClasses.put(name, partialClass);
+					} else {
+						Priority newClass, oldClass;
+						newClass = partialClass.getAnnotation(Priority.class);
+						oldClass = tmp.getAnnotation(Priority.class);
+						if(newClass.value().compareTo(oldClass.value()) > 0) {
+							System.out.println("Overwriting Class " + tmp.getCanonicalName() + " with " + partialClass.getCanonicalName());
+						} else {
+							System.out.println("Omitting Class: " + partialClass.getCanonicalName());
+						}
+					}
+				} else {
+					System.out.println("Omitting Class: " + partialClass.getCanonicalName() + "! Identifier " + name + " already mapped.\n(Use at.resch.html.annotations.Priority to define overwriting behaviour)");
+				}
+			} else
+				partialClasses.put(name, partialClass);
 		}
 	}
 

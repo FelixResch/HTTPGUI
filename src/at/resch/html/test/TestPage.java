@@ -1,6 +1,7 @@
 package at.resch.html.test;
 
 
+import at.resch.html.annotations.CompilerWeight;
 import at.resch.html.annotations.Content;
 import at.resch.html.annotations.Identifier;
 import at.resch.html.annotations.Location;
@@ -16,6 +17,7 @@ public class TestPage {
 
 	//Main Content
 	@Content
+	@CompilerWeight(1)
 	public void makeMain(HTMLElement html) {
 		html.setId("page_main");
 		html.addObject(new H1("Hello World"));
@@ -23,6 +25,7 @@ public class TestPage {
 	}
 	
 	@Content(parent=CODE.class)
+	@CompilerWeight(2)
 	public void someText(HTMLElement html) {
 		html.addObject("Here is some other text");
 	}

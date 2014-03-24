@@ -3,8 +3,11 @@ package at.resch.html.server;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.lang.reflect.Field;
+import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.KeyStore;
 import java.util.Locale;
@@ -26,10 +29,17 @@ import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpServerConnection;
 import org.apache.http.MethodNotSupportedException;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.conn.HttpHostConnectException;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.DefaultBHttpServerConnection;
 import org.apache.http.impl.DefaultBHttpServerConnectionFactory;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpProcessor;
@@ -59,6 +69,8 @@ import at.resch.html.test.TestServerPage;
 public class HTTPGUIServer {
 
 	private static Session session;
+	
+	private static final String SECURITY_TOKEN = "ASuas55f3edfjfg55hert4ykzt5b4df54hdf";
 	
 	static class MainHandler implements HttpRequestHandler {
 
@@ -90,8 +102,37 @@ public class HTTPGUIServer {
 			response.setStatusCode(200);
 		}
 	}
+	
+	static class ControlHandler implements HttpRequestHandler {
 
-	private static void listAllClasses(ClassLoader c) {
+		public void handle(final HttpRequest request,
+				final HttpResponse response, final HttpContext context)
+				throws HttpException, IOException {
+
+			String method = request.getRequestLine().getMethod()
+					.toUpperCase(Locale.ENGLISH);
+			if (!method.equals("GET") && !method.equals("HEAD")
+					&& !method.equals("POST")) {
+				throw new MethodNotSupportedException(method
+						+ " method not supported");
+			}
+			String target = request.getRequestLine().getUri();
+			if (request instanceof HttpEntityEnclosingRequest) {
+				HttpEntity entity = ((HttpEntityEnclosingRequest) request)
+						.getEntity();
+				byte[] entityContent = EntityUtils.toByteArray(entity);
+				System.out.println("Incoming entity content (bytes): "
+						+ entityContent.length);
+			}
+			System.out.println(target);
+			if(target.equals("/control/shutdown/" + SECURITY_TOKEN)) {
+				System.out.println("Server is going down for reboot!");
+				System.exit(0);
+			}
+		}
+	}
+
+	private static void listAllClasses() {
 		try {
 			Reflections reflections = new Reflections();
 			System.out.println("Scanning for Pages");
@@ -132,7 +173,7 @@ public class HTTPGUIServer {
 	public static void start() throws Exception {
 		int port = 8080;
 
-		listAllClasses(HTTPGUIServer.class.getClassLoader());
+		listAllClasses();
 		
 		session = Session.create();
 		session.addLocatable(new TestPage());
@@ -145,6 +186,7 @@ public class HTTPGUIServer {
 		// Set up request handlers
 		UriHttpRequestHandlerMapper registry = new UriHttpRequestHandlerMapper();
 		registry.register("/css/IVORY", new StyleHandler());
+		registry.register("/control/*", new ControlHandler());
 		registry.register("/*", new MainHandler());
 
 		// Set up the HTTP service
@@ -259,6 +301,24 @@ public class HTTPGUIServer {
 	public static void main(String[] args) {
 		try {
 			start();
+		} catch (BindException e) {
+			try {
+				CloseableHttpClient httpclient = HttpClients.createDefault();
+				URI uri = new URIBuilder().setScheme("http").setHost("127.0.0.1:8080")
+						.setPath("/control/shutdown/" + SECURITY_TOKEN).build();
+				HttpGet httpget = new HttpGet(uri);
+				httpclient.execute(httpget);
+			} catch (HttpHostConnectException e1) {
+				try {
+					start();
+				} catch (Exception e2) {
+					e2.printStackTrace();
+				}
+			} catch (URISyntaxException | IOException e1) {
+				e1.printStackTrace();
+			} catch (Exception e1) {
+				e1.printStackTrace();
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

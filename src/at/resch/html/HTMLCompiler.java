@@ -3,12 +3,16 @@ package at.resch.html;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import sun.nio.cs.ext.ISCII91;
+import at.resch.html.annotations.CompilerWeight;
 import at.resch.html.annotations.Content;
 import at.resch.html.annotations.NotSupportedInBrowsers;
 import at.resch.html.annotations.Page;
 import at.resch.html.annotations.Partial;
+import at.resch.html.components.Warning;
 import at.resch.html.elements.BODY;
 import at.resch.html.elements.DIV;
 import at.resch.html.elements.DOCTYPE;
@@ -82,31 +86,42 @@ public class HTMLCompiler {
 			}
 			HTMLElement html = (HTMLElement) p.parent().newInstance();
 			boolean first = true;
+			TreeMap<Double, Method> content = new TreeMap<>();
+			double num = 0;
 			for (Method method : o.getClass().getMethods()) {
 				if (method.getParameterTypes().length == 0)
 					continue;
 				if (method.getParameterTypes()[0] == HTMLElement.class
 						&& method.isAnnotationPresent(Content.class)) {
-					Content c = method.getAnnotation(Content.class);
-					Class<?> parent = c.parent();
-					if (HTMLElement.class.isAssignableFrom(parent)) {
-						try {
-							HTMLElement h = (HTMLElement) parent.newInstance();
-							if (!c.styleClass().equals(""))
-								h.setStyleClass(c.styleClass());
-							method.invoke(o, h);
-							if (!first) {
-								html.addObject(p.delimiter().newInstance());
-							}
-							first = false;
-							html.addObject(h);
-						} catch (InstantiationException
-								| IllegalAccessException
-								| IllegalArgumentException
-								| InvocationTargetException e1) {
-							e1.printStackTrace();
+					if(method.isAnnotationPresent(CompilerWeight.class)) {
+						CompilerWeight cw = method.getAnnotation(CompilerWeight.class);
+						content.put(cw.value(), method);
+						num = cw.value() + 1;
+					} else {
+						content.put(num, method);
+						num++;
+					}
+				}
+			}
+			for(Method method : content.values()) {
+				Content c = method.getAnnotation(Content.class);
+				Class<?> parent = c.parent();
+				if (HTMLElement.class.isAssignableFrom(parent)) {
+					try {
+						HTMLElement h = (HTMLElement) parent.newInstance();
+						if (!c.styleClass().equals(""))
+							h.setStyleClass(c.styleClass());
+						method.invoke(o, h);
+						if (!first) {
+							html.addObject(p.delimiter().newInstance());
 						}
-
+						first = false;
+						html.addObject(h);
+					} catch (InstantiationException
+							| IllegalAccessException
+							| IllegalArgumentException
+							| InvocationTargetException e1) {
+						e1.printStackTrace();
 					}
 				}
 			}
@@ -137,31 +152,43 @@ public class HTMLCompiler {
 		html.addObject(head);
 		BODY body = new BODY();
 		boolean first = true;
+		TreeMap<Double, Method> content = new TreeMap<>();
+		double num = 0;
 		for (Method method : o.getClass().getMethods()) {
 			if (method.getParameterTypes().length == 0)
 				continue;
 			if (method.getParameterTypes()[0] == HTMLElement.class
 					&& method.isAnnotationPresent(Content.class)) {
-				Content c = method.getAnnotation(Content.class);
-				Class<?> parent = c.parent();
-				if (HTMLElement.class.isAssignableFrom(parent)) {
-					try {
-						HTMLElement h = (HTMLElement) parent.newInstance();
-						if (!c.styleClass().equals(""))
-							h.setStyleClass(c.styleClass());
-						method.invoke(o, h);
-						if (!first) {
-							body.addObject(p.delimiter().newInstance());
-						}
-						first = false;
-						body.addObject(h);
-					} catch (InstantiationException | IllegalAccessException
-							| IllegalArgumentException
-							| InvocationTargetException e1) {
-						e1.printStackTrace();
-					}
-
+				if(method.isAnnotationPresent(CompilerWeight.class)) {
+					CompilerWeight cw = method.getAnnotation(CompilerWeight.class);
+					content.put(cw.value(), method);
+					num = cw.value() + 1;
+				} else {
+					content.put(num, method);
+					num++;
 				}
+			}
+		}
+		for(Method method : content.values()) {
+			Content c = method.getAnnotation(Content.class);
+			Class<?> parent = c.parent();
+			if (HTMLElement.class.isAssignableFrom(parent)) {
+				try {
+					HTMLElement h = (HTMLElement) parent.newInstance();
+					if (!c.styleClass().equals(""))
+						h.setStyleClass(c.styleClass());
+					method.invoke(o, h);
+					if (!first) {
+						body.addObject(p.delimiter().newInstance());
+					}
+					first = false;
+					body.addObject(h);
+				} catch (InstantiationException | IllegalAccessException
+						| IllegalArgumentException
+						| InvocationTargetException e1) {
+					e1.printStackTrace();
+				}
+
 			}
 		}
 		html.addObject(body);
@@ -192,10 +219,7 @@ public class HTMLCompiler {
 				for (Object e : ((HTMLElement) o).getChildren()) {
 					if (e instanceof BODY) {
 						BODY body = (BODY) e;
-						DIV alert = new DIV(
-								"You are using an uncompatible Browser please user Firefox or Chrome!");
-						alert.setStyleClass("alert");
-						body.addObject(alert);
+						((BODY) e).addObject(new Warning("You are using an uncompatible Browser"));
 					}
 				}
 			}

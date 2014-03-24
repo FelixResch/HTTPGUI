@@ -1,9 +1,11 @@
 package at.resch.html.test;
 
+import at.resch.html.annotations.CompilerWeight;
 import at.resch.html.annotations.Content;
 import at.resch.html.annotations.Identifier;
 import at.resch.html.annotations.Location;
 import at.resch.html.annotations.Page;
+import at.resch.html.annotations.Priority;
 import at.resch.html.elements.BR;
 import at.resch.html.elements.COMMAND;
 import at.resch.html.elements.H1;
@@ -13,6 +15,7 @@ import at.resch.html.enums.Browsers;
 
 @Page(title="Standard Response", delimiter=BR.class)
 @Identifier("tsp")
+@Priority
 @Location(path="/tsp")
 public class TestServerPage {
 
@@ -30,6 +33,7 @@ public class TestServerPage {
 	}
 	
 	@Content
+	@CompilerWeight(1)
 	public void showPage(HTMLElement html) {
 		html.setStyle("text-align: center; background: #eeeeee;");
 		html.addObject(new H1("Hi, This Is Server!"));
@@ -41,6 +45,7 @@ public class TestServerPage {
 	}
 	
 	@Content
+	@CompilerWeight(2)
 	public void showProgress(HTMLElement html) {
 		html.setStyle("text-align: center; background: #eeeeee;");
 		html.addObject("Construction Progress: ");
