@@ -15,14 +15,16 @@ public class Updates {
 	}
 	
 	public String getJSON() {
-		String ret = "\"updates\":\n\t[";
+		String ret = "{\n\"updates\":\n\t[";
 		Iterator<String> iterator = updates.keySet().iterator();
 		while(iterator.hasNext()) {
 			String key = iterator.next();
 			String element = "\n\t\t{\n\t\t\t\"element\":";
 			element += "\"" + key + "\", ";
-			element += "\"html\":\"" + updates.get(key).replace("\"", "\\\"") + "\"\n\t\t}";
+			element += "\"html\":\"" + updates.get(key).replace("\"", "\\\"").replace("\n", "") + "\"\n\t\t}";
 			ret += element;
+			if(iterator.hasNext())
+				ret += ",\n";
 		}
 		ret += "\n\t]\n}";
 		return ret;

@@ -95,7 +95,7 @@ public class HTMLObject {
 			}
 		}
 		if (children.isEmpty() && tagName != null) {
-			ret += " />";
+			ret += "></" + tagName + ">";
 		} else if (children.size() == 1 && tagName != null) {
 			ret += ">";
 			for (Object html : children) {

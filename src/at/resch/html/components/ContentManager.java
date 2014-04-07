@@ -1,11 +1,59 @@
 package at.resch.html.components;
 
+import java.util.Iterator;
+import java.util.List;
+
+import at.resch.html.HTMLAttribute;
 import at.resch.html.elements.HTMLElement;
+import at.resch.html.enums.MessageType;
+import at.resch.html.events.Updates;
+import at.resch.html.server.Session;
 
 public class ContentManager {
-
-//	public static HTMLElement getPage(String id) {
-//		HTMLElement html = 
-//	}
+	
+	
+	
+	public static void addMessage(MessageType type, String message) {
+		List<HTMLElement> messages = (List<HTMLElement>) Session.getCurrent().get("message.list");
+		switch (type) {
+		case ERROR:
+			messages.add(new Error(message));
+			break;
+		case INFO:
+			messages.add(new Info(message));
+			break;
+		case ALERT:
+			messages.add(new Warning(message));
+			break;
+		case SUCCESS:
+			messages.add(new Success(message));
+			break;
+		default:
+			break;
+		}
+		String msgs = "";
+		for (Iterator<HTMLElement> iterator = messages.iterator(); iterator.hasNext();) {
+			HTMLElement htmlElement = (HTMLElement) iterator.next();
+			msgs += htmlElement.renderHTML() + " ";
+		}
+		Session.getCurrent().getUpdates().addUpdate("messages", msgs);
+		Session.getCurrent().store("message.list", messages);
+	}
+	
+	public static HTMLAttribute getActionAttribute(String event, String handler) {
+		return new HTMLAttribute(event, "invokeAction('" + handler + "')");
+	}
+	
+	public static void addEventToElement(HTMLElement html, String event, String handler) {
+		html.addAttribute(getActionAttribute(event, handler));
+	}
+	
+	public static HTMLAttribute getActionAttribute(String event, String handler, String param) {
+		return new HTMLAttribute(event, "invokeAction('" + handler + "', '" + param + "')");
+	}
+	
+	public static void addEventToElement(HTMLElement html, String event, String handler, String param) {
+		html.addAttribute(getActionAttribute(event, handler, param));
+	}
 
 }

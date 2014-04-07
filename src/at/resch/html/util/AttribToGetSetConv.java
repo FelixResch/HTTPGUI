@@ -2,7 +2,7 @@ package at.resch.html.util;
 
 public class AttribToGetSetConv {
 
-	private static String stringToConvert = "private static final String ATTRIB_MEDIA = \"media\";private static final String ATTRIB_SRC = \"src\";private static final String ATTRIB_TYPE = \"type\";";
+	private static String stringToConvert = "private static final String ATTRIB_AUTOPLAY = \"autoplay\";private static final String ATTRIB_CONTROLS = \"controls\";private static final String ATTRIB_HEIGHT = \"height\";private static final String ATTRIB_LOOP = \"loop\";private static final String ATTRIB_MUTED = \"muted\";private static final String ATTRIB_POSTED = \"poster\";private static final String ATTRIB_PRELOAD = \"preload\";private static final String ATTRIB_SRC = \"src\";private static final String ATTRIB_WIDTH = \"width\";";
 
 	public static void main(String[] args) {
 		String[] events = stringToConvert.split(";");

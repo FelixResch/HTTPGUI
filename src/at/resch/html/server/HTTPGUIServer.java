@@ -1,8 +1,9 @@
 package at.resch.html.server;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
-import java.lang.reflect.Field;
 import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -12,7 +13,6 @@ import java.net.URL;
 import java.security.KeyStore;
 import java.util.Locale;
 import java.util.Set;
-import java.util.Vector;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -20,7 +20,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocketFactory;
 
 import org.apache.http.ConnectionClosedException;
-import org.apache.http.Header;
 import org.apache.http.HttpConnectionFactory;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
@@ -29,8 +28,6 @@ import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpServerConnection;
 import org.apache.http.MethodNotSupportedException;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.HttpHostConnectException;
@@ -52,22 +49,23 @@ import org.apache.http.protocol.ResponseDate;
 import org.apache.http.protocol.ResponseServer;
 import org.apache.http.protocol.UriHttpRequestHandlerMapper;
 import org.apache.http.util.EntityUtils;
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Logger;
 import org.reflections.Reflections;
 
-import at.resch.html.HTMLCompiler;
+import at.resch.html.annotations.CustomHandler;
 import at.resch.html.annotations.Identifier;
 import at.resch.html.annotations.Location;
 import at.resch.html.annotations.Page;
 import at.resch.html.annotations.Partial;
-import at.resch.html.components.StandardErrorPage;
-import at.resch.html.elements.HTMLElement;
 import at.resch.html.enums.Browsers;
 import at.resch.html.server.util.UserAgentParser;
 import at.resch.html.test.TestPage;
-import at.resch.html.test.TestServerPage;
 
 public class HTTPGUIServer {
 	
+	
+	private static final Logger log = Logger.getLogger(HTTPGUIServer.class);
 	private static final String SECURITY_TOKEN = "ASuas55f3edfjfg55hert4ykzt5b4df54hdf";
 	
 	static class MainHandler implements HttpRequestHandler {
@@ -116,16 +114,51 @@ public class HTTPGUIServer {
 			}
 			String target = request.getRequestLine().getUri();
 			if (request instanceof HttpEntityEnclosingRequest) {
+			}
+			if(target.equals("/control/shutdown/" + SECURITY_TOKEN)) {
+				log.warn("Server is going down for reboot");
+				System.exit(0);
+			}
+		}
+	}
+	
+	static class ActionHandler implements HttpRequestHandler {
+
+		public void handle(final HttpRequest request,
+				final HttpResponse response, final HttpContext context)
+				throws HttpException, IOException {
+
+			String method = request.getRequestLine().getMethod()
+					.toUpperCase(Locale.ENGLISH);
+			if (!method.equals("GET") && !method.equals("HEAD")
+					&& !method.equals("POST")) {
+				throw new MethodNotSupportedException(method
+						+ " method not supported");
+			}
+			String target = request.getRequestLine().getUri();
+			String userAgent = request.getFirstHeader("User-Agent").getValue();
+			Browsers browser = UserAgentParser.parseUserAgent(userAgent);
+			StringEntity str_entity = null;
+			if (request instanceof HttpEntityEnclosingRequest) {
 				HttpEntity entity = ((HttpEntityEnclosingRequest) request)
 						.getEntity();
 				byte[] entityContent = EntityUtils.toByteArray(entity);
-				System.out.println("Incoming entity content (bytes): "
-						+ entityContent.length);
+				str_entity = new StringEntity(new String(entityContent));
 			}
-			System.out.println(target);
-			if(target.equals("/control/shutdown/" + SECURITY_TOKEN)) {
-				System.out.println("Server is going down for reboot!");
-				System.exit(0);
+			if(target.equals("/action/get/list/")) {
+				System.out.println("Transmitting Action List for Session " + Session.getCurrent().get("client.address"));
+				log.info("Transmitting Action List for Session " + Session.getCurrent().get("client.address"));
+				String json = Session.getCurrent().getActionManager().getActions();
+				response.setEntity(new StringEntity(json, ContentType.APPLICATION_JSON));
+				response.setStatusCode(200);
+				return;
+			} else if (target.startsWith("/action/invoke/")){
+				BufferedReader in = new BufferedReader(new InputStreamReader(str_entity.getContent()));
+				String action = in.readLine();
+				String json = Session.getCurrent().getActionManager().invokeAction(action, browser).getJSON();
+				response.setEntity(new StringEntity(json, ContentType.APPLICATION_JSON));
+				response.setStatusCode(200);
+				return;
 			}
 		}
 	}
@@ -133,7 +166,7 @@ public class HTTPGUIServer {
 	private static void listAllClasses() {
 		try {
 			Reflections reflections = new Reflections();
-			System.out.println("Scanning for Pages");
+			log.info("Scanning for HTML pages");
 			Set<Class<? extends Object>> subTypes = reflections.getTypesAnnotatedWith(Page.class);
 			for (Class<? extends Object> class1 : subTypes) {
 				if(class1.isAnnotationPresent(Identifier.class)) {
@@ -142,8 +175,8 @@ public class HTTPGUIServer {
 					Session.addPage(id, class1);
 				}
 			}
-			System.out.println(subTypes.size() + " found");
-			System.out.println("Scanning for Partials");
+			log.info("Found " + subTypes.size() + " Pages");
+			log.info("Scanning for HTML partials");
 			Set<Class<? extends Object>> subTypes1 = reflections.getTypesAnnotatedWith(Partial.class);
 			for (Class<? extends Object> class1 : subTypes1) {
 				if(class1.isAnnotationPresent(Identifier.class)) {
@@ -152,8 +185,8 @@ public class HTTPGUIServer {
 					Session.addPartial(id, class1);
 				}
 			}
-			System.out.println(subTypes1.size() + " found");
-			System.out.println("Scanning for Locations");
+			log.info("Found " + subTypes1.size() + " Partials");
+			log.info("Scanning HTML document tree");
 			Set<Class<? extends Object>> subTypes2 = reflections.getTypesAnnotatedWith(Location.class);
 			for (Class<? extends Object> class1 : subTypes2) {
 				if(class1.isAnnotationPresent(Identifier.class)) {
@@ -162,16 +195,35 @@ public class HTTPGUIServer {
 					Session.addLocatable(id, class1);
 				}
 			}
-			System.out.println(subTypes2.size() + " found");
+			log.info("Found " + subTypes2.size() + " Locations");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	
+	private static void addCustomHandlers(UriHttpRequestHandlerMapper registry) {
+		Reflections reflections = new Reflections();
+		log.info("Scanning for Custom Handlers");
+		Set<Class<? extends Object>> subTypes2 = reflections.getTypesAnnotatedWith(CustomHandler.class);
+		for (Class<? extends Object> class1 : subTypes2) {
+			if(class1.isAnnotationPresent(CustomHandler.class)) {
+				try {
+					CustomHandler i = class1.getAnnotation(CustomHandler.class);
+					String id = i.value();
+					Object o = class1.newInstance();
+					if(o instanceof HttpRequestHandler)
+						registry.register(id, (HttpRequestHandler) o);
+				} catch (InstantiationException | IllegalAccessException e) {
+					log.error("Error while adding Custom Handler", e);
+				}
+			}
+		}
+		log.info("Found " + subTypes2.size() + " CustomHandlers");
 	}
 
 	public static void start() throws Exception {
 		int port = 8080;
 
-		listAllClasses();
 		Session session = Session.getCurrent();
 		session.addLocatable(new TestPage());
 
@@ -184,6 +236,9 @@ public class HTTPGUIServer {
 		UriHttpRequestHandlerMapper registry = new UriHttpRequestHandlerMapper();
 		registry.register("/css/IVORY", new StyleHandler());
 		registry.register("/control/*", new ControlHandler());
+		registry.register("/action/*", new ActionHandler());
+		registry.register("/script/", new ScriptHandler());
+		addCustomHandlers(registry);
 		registry.register("/*", new MainHandler());
 
 		// Set up the HTTP service
@@ -227,18 +282,17 @@ public class HTTPGUIServer {
 			this.serversocket = sf != null ? sf.createServerSocket(port)
 					: new ServerSocket(port);
 			this.httpService = httpService;
+			this.setName("RequestListener");
 		}
 
 		@Override
 		public void run() {
-			System.out.println("Listening on port "
-					+ this.serversocket.getLocalPort());
+			log.info("Server running on port: " + serversocket.getLocalPort());
 			while (!Thread.interrupted()) {
 				try {
 					// Set up HTTP connection
 					Socket socket = this.serversocket.accept();
-					System.out.println("Incoming connection from "
-							+ socket.getInetAddress());
+					log.info("Incoming connection from: " + socket.getInetAddress());
 					HttpServerConnection conn = this.connFactory
 							.createConnection(socket);
 
@@ -250,9 +304,7 @@ public class HTTPGUIServer {
 				} catch (InterruptedIOException ex) {
 					break;
 				} catch (IOException e) {
-					System.err
-							.println("I/O error initialising connection thread: "
-									+ e.getMessage());
+					log.error("I/O Error. Server couldn't be started", e);
 					break;
 				}
 			}
@@ -281,12 +333,10 @@ public class HTTPGUIServer {
 					this.httpservice.handleRequest(this.conn, context);
 				}
 			} catch (ConnectionClosedException ex) {
-				// System.err.println("Client closed connection");
 			} catch (IOException ex) {
-				System.err.println("I/O error: " + ex.getMessage());
+				log.error("I/O error", ex);
 			} catch (HttpException ex) {
-				System.err.println("Unrecoverable HTTP protocol violation: "
-						+ ex.getMessage());
+				log.error("Unrecoverable HTTP Protocol violation", ex);
 			} finally {
 				try {
 					this.conn.shutdown();
@@ -298,7 +348,9 @@ public class HTTPGUIServer {
 	}
 
 	public static void main(String[] args) {
+		BasicConfigurator.configure();
 		try {
+			listAllClasses();
 			start();
 		} catch (BindException e) {
 			try {

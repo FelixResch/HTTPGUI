@@ -2,39 +2,43 @@ package at.resch.html.server;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.logging.LoggingMXBean;
+import java.util.Set;
 
-import org.apache.commons.logging.Log;
-import org.w3c.dom.html.HTMLCollection;
-
-import com.google.common.base.Objects;
+import org.apache.log4j.Logger;
+import org.reflections.Reflections;
+import org.reflections.scanners.MethodAnnotationsScanner;
 
 import at.resch.html.HTMLCompiler;
+import at.resch.html.annotations.Action;
 import at.resch.html.annotations.Location;
 import at.resch.html.annotations.Page;
 import at.resch.html.annotations.Partial;
 import at.resch.html.annotations.Priority;
-import at.resch.html.components.StandardErrorPage;
 import at.resch.html.elements.BR;
 import at.resch.html.elements.DIV;
 import at.resch.html.elements.HTMLElement;
 import at.resch.html.enums.Browsers;
+import at.resch.html.events.ActionManager;
+import at.resch.html.events.Updates;
 
 public class Session {
+	
+	public static final Logger logger = Logger.getLogger(HTTPGUIServer.class);
 
 	private final HashMap<String, Locatable> pages = new HashMap<>();
 	private final HashMap<String, Object> store = new HashMap<>();
+	private ActionManager actionManager = new ActionManager();
+	
+	private Updates updates;
 
 	private static final HashMap<String, Class<?>> locatablesClasses = new HashMap<>();
 	private static final HashMap<String, Class<?>> pageClasses = new HashMap<>();
 	private static final HashMap<String, Class<?>> partialClasses = new HashMap<>();
 	private static final HashMap<String, Session> sessions = new HashMap<>();
-	
-	private static Logger logger = Logger.getLogger("Session");
 
 	public static void addLocatable(String name, Class<?> locatableClass) {
 		if (locatableClass.isAnnotationPresent(Location.class)) {
@@ -42,20 +46,20 @@ public class Session {
 				if(locatableClass.isAnnotationPresent(Priority.class)){
 					Class<?> tmp = locatablesClasses.get(name);
 					if(!tmp.isAnnotationPresent(Priority.class)) {
-						System.err.println("Overwriting unprioritised Class" + tmp.getCanonicalName() + " with " + locatableClass.getCanonicalName());
+						logger.warn("Overwriting unprioritised Class " + tmp.getCanonicalName() + " with " + locatableClass.getCanonicalName());
 						locatablesClasses.put(name, locatableClass);
 					} else {
 						Priority newClass, oldClass;
 						newClass = locatableClass.getAnnotation(Priority.class);
 						oldClass = tmp.getAnnotation(Priority.class);
 						if(newClass.value().compareTo(oldClass.value()) > 0) {
-							System.out.println("Overwriting Class " + tmp.getCanonicalName() + " with " + locatableClass.getCanonicalName());
+							logger.info("Overwriting Class " + tmp.getCanonicalName() + " with " + locatableClass.getCanonicalName());
 						} else {
-							System.out.println("Omitting Class: " + locatableClass.getCanonicalName());
+							logger.warn("Omitting Class: " + locatableClass.getCanonicalName());
 						}
 					}
 				} else {
-					System.out.println("Omitting Class: " + locatableClass.getCanonicalName() + "! Identifier " + name + " already mapped.\n(Use at.resch.html.annotations.Priority to define overwriting behaviour)");
+					logger.warn("Omitting Class: " + locatableClass.getCanonicalName() + "! Identifier " + name + " already mapped.\n(Use at.resch.html.annotations.Priority to define overwriting behaviour)");
 				}
 			} else
 				locatablesClasses.put(name, locatableClass);
@@ -121,20 +125,20 @@ public class Session {
 				if(pageClass.isAnnotationPresent(Priority.class)){
 					Class<?> tmp = pageClasses.get(name);
 					if(!tmp.isAnnotationPresent(Priority.class)) {
-						System.err.println("Overwriting unprioritised Class" + tmp.getCanonicalName() + " with " + pageClass.getCanonicalName());
+						logger.warn("Overwriting unprioritised Class" + tmp.getCanonicalName() + " with " + pageClass.getCanonicalName());
 						pageClasses.put(name, pageClass);
 					} else {
 						Priority newClass, oldClass;
 						newClass = pageClass.getAnnotation(Priority.class);
 						oldClass = tmp.getAnnotation(Priority.class);
 						if(newClass.value().compareTo(oldClass.value()) > 0) {
-							System.out.println("Overwriting Class " + tmp.getCanonicalName() + " with " + pageClass.getCanonicalName());
+							logger.info("Overwriting Class " + tmp.getCanonicalName() + " with " + pageClass.getCanonicalName());
 						} else {
-							System.out.println("Omitting Class: " + pageClass.getCanonicalName());
+							logger.warn("Omitting Class: " + pageClass.getCanonicalName());
 						}
 					}
 				} else {
-					System.out.println("Omitting Class: " + pageClass.getCanonicalName() + "! Identifier " + name + " already mapped.\n(Use at.resch.html.annotations.Priority to define overwriting behaviour)");
+					logger.warn("Omitting Class: " + pageClass.getCanonicalName() + "! Identifier " + name + " already mapped.\n(Use at.resch.html.annotations.Priority to define overwriting behaviour)");
 				}
 			} else
 				pageClasses.put(name, pageClass);
@@ -201,20 +205,20 @@ public class Session {
 				if(partialClass.isAnnotationPresent(Priority.class)){
 					Class<?> tmp = partialClasses.get(name);
 					if(!tmp.isAnnotationPresent(Priority.class)) {
-						System.err.println("Overwriting unprioritised Class" + tmp.getCanonicalName() + " with " + partialClass.getCanonicalName());
+						logger.warn("Overwriting unprioritised Class" + tmp.getCanonicalName() + " with " + partialClass.getCanonicalName());
 						partialClasses.put(name, partialClass);
 					} else {
 						Priority newClass, oldClass;
 						newClass = partialClass.getAnnotation(Priority.class);
 						oldClass = tmp.getAnnotation(Priority.class);
 						if(newClass.value().compareTo(oldClass.value()) > 0) {
-							System.out.println("Overwriting Class " + tmp.getCanonicalName() + " with " + partialClass.getCanonicalName());
+							logger.info("Overwriting Class " + tmp.getCanonicalName() + " with " + partialClass.getCanonicalName());
 						} else {
-							System.out.println("Omitting Class: " + partialClass.getCanonicalName());
+							logger.warn("Omitting Class: " + partialClass.getCanonicalName());
 						}
 					}
 				} else {
-					System.out.println("Omitting Class: " + partialClass.getCanonicalName() + "! Identifier " + name + " already mapped.\n(Use at.resch.html.annotations.Priority to define overwriting behaviour)");
+					logger.warn("Omitting Class: " + partialClass.getCanonicalName() + "! Identifier " + name + " already mapped.\n(Use at.resch.html.annotations.Priority to define overwriting behaviour)");
 				}
 			} else
 				partialClasses.put(name, partialClass);
@@ -296,11 +300,20 @@ public class Session {
 		return create();
 	}
 	
+	public static void prepareForAction() {
+		getCurrent().updates = new Updates();
+		getCurrent().store("message.list", new ArrayList<HTMLElement>());
+	}
+	
+	public Updates getUpdates() {
+		return updates;
+	}
+
 	public static Session create() {
 		if(sessions.containsKey(Thread.currentThread().getName())) {
 			return sessions.get(Thread.currentThread().getName());
 		}
-		logger.log(Level.INFO, "Creating new Session for: " + Thread.currentThread().getName());
+		logger.info("Creating new Session for: " + Thread.currentThread().getName());
 		Session s = new Session();
 		s.store("client.address", Thread.currentThread().getName());
 		Iterator<String> iterator = locatablesClasses.keySet().iterator();
@@ -310,6 +323,22 @@ public class Session {
 			try {
 				Object o = type.newInstance();
 				s.addLocatable(o);
+			} catch (InstantiationException | IllegalAccessException e) {
+				e.printStackTrace();
+			}
+		}
+		ActionManager actionManager = new ActionManager();
+		Reflections reflections = new Reflections("", new MethodAnnotationsScanner());
+		Set<Method> methods = reflections.getMethodsAnnotatedWith(Action.class);
+		logger.info("Found " + methods.size() + " Actions");
+		s.actionManager = actionManager;
+		for(Method m : methods) {
+			try {
+				Action a = m.getAnnotation(Action.class);
+				Class<?> class1 = m.getDeclaringClass();
+				Object instance = class1.newInstance();
+				at.resch.html.events.Action action = new at.resch.html.events.Action(a.name(), a.args(), m, instance);
+				actionManager.addAction(action);
 			} catch (InstantiationException | IllegalAccessException e) {
 				e.printStackTrace();
 			}
@@ -327,6 +356,7 @@ public class Session {
 		} else {
 			System.err.println("Object of Type "
 					+ o.getClass().getCanonicalName() + " is not locatable!");
+			logger.warn("Object of Type " + o.getClass().getCanonicalName() + " is not locatable!");
 		}
 	}
 
@@ -352,6 +382,10 @@ public class Session {
 		if(store.containsKey(name))
 			return store.get(name);
 		return null;
+	}
+
+	public ActionManager getActionManager() {
+		return actionManager;
 	}
 
 	private class Locatable {
