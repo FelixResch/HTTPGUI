@@ -13,6 +13,7 @@ import at.resch.html.annotations.NotSupportedInBrowsers;
 import at.resch.html.annotations.Page;
 import at.resch.html.annotations.Partial;
 import at.resch.html.annotations.ResourcePack;
+import at.resch.html.components.StackErrorPage;
 import at.resch.html.components.Warning;
 import at.resch.html.elements.BODY;
 import at.resch.html.elements.DIV;
@@ -28,6 +29,7 @@ import at.resch.html.elements.STYLE;
 import at.resch.html.elements.TITLE;
 import at.resch.html.enums.Browsers;
 import at.resch.html.enums.Style;
+import at.resch.html.server.Session;
 import at.resch.html.test.TestPage;
 
 @ResourcePack("bootstrap_2.tar.xz")
@@ -140,95 +142,101 @@ public class HTMLCompiler {
 	}
 
 	private static HTMLElement compilePage(Object o) {
-		Page p = null;
-		Annotation[] pageAnnotations = o.getClass().getAnnotations();
-		for (Annotation annotation : pageAnnotations) {
-			if (annotation instanceof Page)
-				p = (Page) annotation;
-		}
-		HTMLElement e = new HTMLDocument();
-		e.addObject(new DOCTYPE());
-		HTML html = new HTML();
-		e.addObject(html);
-		HEAD head = new HEAD();
-		head.addObject(new TITLE(p.title()));
-		if(p.style() == Style.IVORY) {
-			head.addObject(new LINK(new HTMLAttribute("rel", "stylesheet"),
-					new HTMLAttribute("type", "text/css"), new HTMLAttribute(
-							"href", "/css/" + p.style())));
-		} else if (p.style() == Style.BOOTSTRAP_DEFAULT) {
-			head.addObject(new LINK(new HTMLAttribute("rel", "stylesheet"),
-					new HTMLAttribute("type", "text/css"), new HTMLAttribute(
-							"href", "/res/bootstrap/css/bootstrap.css")));
+		try {
+			Page p = null;
+			Annotation[] pageAnnotations = o.getClass().getAnnotations();
+			for (Annotation annotation : pageAnnotations) {
+				if (annotation instanceof Page)
+					p = (Page) annotation;
+			}
+			HTMLElement e = new HTMLDocument();
+			e.addObject(new DOCTYPE());
+			HTML html = new HTML();
+			e.addObject(html);
+			HEAD head = new HEAD();
+			head.addObject(new TITLE(p.title()));
+			if(p.style() == Style.IVORY) {
+				head.addObject(new LINK(new HTMLAttribute("rel", "stylesheet"),
+						new HTMLAttribute("type", "text/css"), new HTMLAttribute(
+								"href", "/css/" + p.style())));
+			} else if (p.style() == Style.BOOTSTRAP_DEFAULT) {
+				head.addObject(new LINK(new HTMLAttribute("rel", "stylesheet"),
+						new HTMLAttribute("type", "text/css"), new HTMLAttribute(
+								"href", "/res/bootstrap/css/bootstrap.css")));
+				SCRIPT script = new SCRIPT();
+				script.setType("text/javascript");
+				script.setSrc("http://code.jquery.com/jquery-1.10.1.min.js");
+				head.addObject(script);
+				script = new SCRIPT();
+				script.setType("text/javascript");
+				script.setSrc("/res/bootstrap/js/bootstrap.js");
+				head.addObject(script);
+			}
 			SCRIPT script = new SCRIPT();
 			script.setType("text/javascript");
-			script.setSrc("http://code.jquery.com/jquery-1.10.1.min.js");
+			script.setSrc("/script/");
 			head.addObject(script);
-			script = new SCRIPT();
-			script.setType("text/javascript");
-			script.setSrc("/res/bootstrap/js/bootstrap.js");
-			head.addObject(script);
-		}
-		SCRIPT script = new SCRIPT();
-		script.setType("text/javascript");
-		script.setSrc("/script/");
-		head.addObject(script);
-		head.addObject(new STYLE("progress, progress[role] {  -webkit-appearence: none;-moz-appearence: none;appearence: none;border: none;background-size: auto;width: 80%;float: center;height: 2px;}  progress[role]:after {background-image: none;}progress[role] strong {display: none;}progress,progress[role][aria-valuenow] {background: #EBEBE0 !important;}progress {color: blue;}progress::-webkit-progress-bar { background: #EBEBE0;}  progress::-webkit-progress-value {  background: #00CCFF;}  progress::-moz-progress-bar {  background: #00CCFF;}.job {border: 1px #EBEBE0 solid;text-align: center;width: 60%;}.message {width: 300px;float: right;padding: 10px;position: absolute;} .ajax_load {position: absolute; padding: 0px; border: none; margin: 0px; width: 100%; height: 2px}"));
-		html.addObject(head);
-		BODY body = new BODY();
-		body.addAttribute(new HTMLAttribute("onload", "loadActionList();"));
-		PROGRESS progress = new PROGRESS();
-		progress.setValue("2");
-		progress.setMax("4");
-		progress.setId("ajax_progress");
-		progress.setStyleClass("ajax_load");
-		DIV messages = new DIV();
-		messages.setStyle("position: absolute; padding: 10px");
-		messages.setId("messages");
-		body.addObject(progress);
-		body.addObject(messages);
-		boolean first = true;
-		TreeMap<Double, Method> content = new TreeMap<>();
-		double num = 0;
-		for (Method method : o.getClass().getMethods()) {
-			if (method.getParameterTypes().length == 0)
-				continue;
-			if (method.getParameterTypes()[0] == HTMLElement.class
-					&& method.isAnnotationPresent(Content.class)) {
-				if(method.isAnnotationPresent(CompilerWeight.class)) {
-					CompilerWeight cw = method.getAnnotation(CompilerWeight.class);
-					content.put(cw.value(), method);
-					num = cw.value() + 1;
-				} else {
-					content.put(num, method);
-					num++;
-				}
-			}
-		}
-		for(Method method : content.values()) {
-			Content c = method.getAnnotation(Content.class);
-			Class<?> parent = c.parent();
-			if (HTMLElement.class.isAssignableFrom(parent)) {
-				try {
-					HTMLElement h = (HTMLElement) parent.newInstance();
-					if (!c.styleClass().equals(""))
-						h.setStyleClass(c.styleClass());
-					method.invoke(o, h);
-					if (!first) {
-						body.addObject(p.delimiter().newInstance());
+			head.addObject(new STYLE("progress, progress[role] {  -webkit-appearence: none;-moz-appearence: none;appearence: none;border: none;background-size: auto;width: 80%;float: center;height: 2px;}  progress[role]:after {background-image: none;}progress[role] strong {display: none;}progress,progress[role][aria-valuenow] {background: #EBEBE0 !important;}progress {color: blue;}progress::-webkit-progress-bar { background: #EBEBE0;}  progress::-webkit-progress-value {  background: #00CCFF;}  progress::-moz-progress-bar {  background: #00CCFF;}.job {border: 1px #EBEBE0 solid;text-align: center;width: 60%;}.message {width: 300px;float: right;padding: 10px;position: absolute;} .ajax_load {position: absolute; padding: 0px; border: none; margin: 0px; width: 100%; height: 2px}"));
+			html.addObject(head);
+			BODY body = new BODY();
+			body.addAttribute(new HTMLAttribute("onload", "loadActionList();"));
+			PROGRESS progress = new PROGRESS();
+			progress.setValue("2");
+			progress.setMax("4");
+			progress.setId("ajax_progress");
+			progress.setStyleClass("ajax_load");
+			DIV messages = new DIV();
+			messages.setStyle("position: absolute; padding: 10px");
+			messages.setId("messages");
+			body.addObject(progress);
+			body.addObject(messages);
+			boolean first = true;
+			TreeMap<Double, Method> content = new TreeMap<>();
+			double num = 0;
+			for (Method method : o.getClass().getMethods()) {
+				if (method.getParameterTypes().length == 0)
+					continue;
+				if (method.getParameterTypes()[0] == HTMLElement.class
+						&& method.isAnnotationPresent(Content.class)) {
+					if(method.isAnnotationPresent(CompilerWeight.class)) {
+						CompilerWeight cw = method.getAnnotation(CompilerWeight.class);
+						content.put(cw.value(), method);
+						num = cw.value() + 1;
+					} else {
+						content.put(num, method);
+						num++;
 					}
-					first = false;
-					body.addObject(h);
-				} catch (InstantiationException | IllegalAccessException
-						| IllegalArgumentException
-						| InvocationTargetException e1) {
-					e1.printStackTrace();
 				}
-
 			}
+			for(Method method : content.values()) {
+				Content c = method.getAnnotation(Content.class);
+				Class<?> parent = c.parent();
+				if (HTMLElement.class.isAssignableFrom(parent)) {
+					try {
+						HTMLElement h = (HTMLElement) parent.newInstance();
+						if (!c.styleClass().equals(""))
+							h.setStyleClass(c.styleClass());
+						method.invoke(o, h);
+						if (!first) {
+							body.addObject(p.delimiter().newInstance());
+						}
+						first = false;
+						body.addObject(h);
+					} catch (InstantiationException | IllegalAccessException
+							| IllegalArgumentException
+							| InvocationTargetException e1) {
+						StackErrorPage sep = new StackErrorPage(e1, "Some target");
+						return HTMLCompiler.compilePage(sep);
+					}
+
+				}
+			}
+			html.addObject(body);
+			return e;
+		} catch (Exception e) {
+			StackErrorPage sep = new StackErrorPage(e, "Some target");
+			return HTMLCompiler.compilePage(sep);
 		}
-		html.addObject(body);
-		return e;
 	}
 
 	private static boolean checkCompatibility(HTMLElement html, Browsers b) {
