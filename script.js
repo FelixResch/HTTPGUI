@@ -70,6 +70,16 @@ function invokeAction(eventName, params) {
                         }
                     }
                     window.scroll(0, 0);
+                    var fade_;
+                    window.setTimeout(function () {
+                    	$('#messages').contents().each(function (i) {
+                    		$(this).fadeTo(1000, 0);
+                    	});
+                    }, 2000);
+                    window.setTimeout(function () {
+                    	document.getElementById('messages').innerHTML = '';
+                    	window.clearInterval(fade_);
+                    }, 3000);
                 }
                 document.getElementById("ajax_progress").value = xmlhttp.readyState;
             };

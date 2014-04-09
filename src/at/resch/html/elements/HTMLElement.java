@@ -2,8 +2,10 @@ package at.resch.html.elements;
 
 import at.resch.html.HTMLAttribute;
 import at.resch.html.HTMLObject;
+import at.resch.html.annotations.RenderMode;
+import at.resch.html.enums.Mode;
 
-
+@RenderMode(Mode.HALF)
 public abstract class HTMLElement extends HTMLObject {
 	
 	private static final String ATTRIB_ACCESS_KEY = "accesskey";

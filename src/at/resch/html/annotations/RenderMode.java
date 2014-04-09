@@ -5,8 +5,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import at.resch.html.enums.Mode;
+
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface RenderMode {
-	public at.resch.html.enums.RenderMode value() default at.resch.html.enums.RenderMode.SMOOTH;
+	public Mode value() default Mode.SMOOTH;
 }

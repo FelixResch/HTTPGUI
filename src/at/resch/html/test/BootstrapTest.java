@@ -61,7 +61,6 @@ public class BootstrapTest {
 	@Action(name="nav_action", args={})
 	public void navAction(Updates updates, String[] args, String param) {
 		ContentManager.addMessage(MessageType.INFO, param);
-		ContentManager.addMessage(MessageType.ERROR, "Some error happened here");
 	}
 	
 }

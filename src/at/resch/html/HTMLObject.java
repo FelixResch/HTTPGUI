@@ -13,6 +13,8 @@ import at.resch.html.elements.HTMLDocument;
 import at.resch.html.elements.HTMLElement;
 import at.resch.html.elements.STYLE;
 import at.resch.html.elements.TITLE;
+import at.resch.html.enums.Mode;
+import at.resch.html.annotations.RenderMode;
 
 public class HTMLObject {
 
@@ -85,6 +87,9 @@ public class HTMLObject {
 
 	public String renderHTML() {
 		String ret = "";
+		Mode mode = Mode.NONE;
+		if(getClass().isAnnotationPresent(RenderMode.class))
+			mode = getClass().getAnnotation(RenderMode.class).value();
 		if (tagName != null) {
 			ret += "<" + tagName;
 			if (!attributes.isEmpty()) {
@@ -95,7 +100,19 @@ public class HTMLObject {
 			}
 		}
 		if (children.isEmpty() && tagName != null) {
-			ret += "></" + tagName + ">";
+			switch(mode) {
+			case FULL:
+				ret += "></" + tagName + ">";
+				break;
+			case SMOOTH:
+				ret += ">";
+				break;
+			default:
+			case HALF:
+				ret += "/>";
+				break;
+			}
+			
 		} else if (children.size() == 1 && tagName != null) {
 			ret += ">";
 			for (Object html : children) {

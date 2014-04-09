@@ -1,5 +1,9 @@
 package at.resch.html.elements;
 
+import at.resch.html.annotations.RenderMode;
+import at.resch.html.enums.Mode;
+
+@RenderMode(Mode.FULL)
 public class Heading extends HTMLElement{
 
 	private static final String ATTRIB_ALIGN = "align";

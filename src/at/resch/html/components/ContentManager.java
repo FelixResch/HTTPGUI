@@ -55,5 +55,27 @@ public class ContentManager {
 	public static void addEventToElement(HTMLElement html, String event, String handler, String param) {
 		html.addAttribute(getActionAttribute(event, handler, param));
 	}
+	
+	public static void enableTouch(HTMLElement html, String touch_up, String touch_right, String touch_down, String touch_left) {
+		if(html.getId() != null)
+			enableTouch(html.getId(), touch_up, touch_right, touch_down, touch_left);
+	}
+	
+	public static void enableTouch(String id, String touch_up, String touch_right, String touch_down, String touch_left) {
+		Session.getCurrent().getUpdates().addUpdate("touch", "{\"element\":\"" + id +
+				"\", \"calls\":[\"" + touch_up + 
+				"\", \"" + touch_right + 
+				"\", \"" + touch_down + 
+				"\", \"" + touch_left + "\"]}");
+	}
+	
+	public static void disableTouch(HTMLElement html) {
+		if(html.getId() != null)
+			disableTouch(html.getId());
+	}
+	
+	public static void disableTouch(String id) {
+		Session.getCurrent().getUpdates().addUpdate("untouch", id);
+	}
 
 }

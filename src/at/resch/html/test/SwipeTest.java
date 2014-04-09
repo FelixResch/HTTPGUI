@@ -6,10 +6,12 @@ import at.resch.html.annotations.Content;
 import at.resch.html.annotations.Identifier;
 import at.resch.html.annotations.Location;
 import at.resch.html.annotations.Page;
+import at.resch.html.components.ContentManager;
 import at.resch.html.components.Info;
 import at.resch.html.elements.DIV;
 import at.resch.html.elements.HTMLElement;
 import at.resch.html.elements.BUTTON;
+import at.resch.html.enums.MessageType;
 import at.resch.html.enums.Style;
 import at.resch.html.events.Updates;
 import at.resch.html.server.Session;
@@ -33,12 +35,13 @@ public class SwipeTest {
 	public void enableTouch(Updates updates) {
 		if(Session.getCurrent().get("touch.state").equals("off")) {
 			updates.addUpdate("touch", "{\"element\":\"touch_div\", \"calls\":[\"touch_up\", \"touch_right\", \"touch_down\", \"touch_left\"]}");
-			updates.addUpdate("messages", new Info("Touch enabled").renderHTML());
+			ContentManager.enableTouch("touch_div", "touch_up", "touch_right", "touch_down", "touch_left");
+			ContentManager.addMessage(MessageType.INFO, "Touch enabled");
 			updates.addUpdate("touch_enable_btn", "Stop Touch");
 			Session.getCurrent().store("touch.state", "on");
 		} else {
-			updates.addUpdate("untouch", "touch_div");
-			updates.addUpdate("messages", new Info("Touch disabled").renderHTML());
+			ContentManager.disableTouch("touch_div");
+			ContentManager.addMessage(MessageType.INFO, "Touch disabled");
 			updates.addUpdate("touch_enable_btn", "Start Touch");
 			Session.getCurrent().store("touch.state", "off");
 		}
