@@ -61,6 +61,28 @@ public class ContentManager {
 			enableTouch(html.getId(), touch_up, touch_right, touch_down, touch_left);
 	}
 	
+	public static void requestParams(String action, String[] args) {
+		Updates u = Session.getCurrent().getUpdates();
+		String updateString = "{\"element\":\"" + action + "\", \"params\":[";
+		for(int i = 0; i < args.length; i++) {
+			String a = args[i];
+			updateString += "\"" + a + "\"" + (i == args.length - 1 ? ", " : "");
+		}
+		updateString += "]}";
+		u.addUpdate("invoke", updateString);
+	}
+	
+	public static void requestParams(String action, String[] args, String param) {
+		Updates u = Session.getCurrent().getUpdates();
+		String updateString = "{\"element\":\"" + action + "\", \"params\":[";
+		for(int i = 0; i < args.length; i++) {
+			String a = args[i];
+			updateString += "\"" + a + "\"" + (i == args.length - 1 ? "" : ", ");
+		}
+		updateString += "], \"param\":\"" + param + "\"}";
+		u.addUpdate("invoke", updateString);
+	}
+	
 	public static void enableTouch(String id, String touch_up, String touch_right, String touch_down, String touch_left) {
 		Session.getCurrent().getUpdates().addUpdate("touch", "{\"element\":\"" + id +
 				"\", \"calls\":[\"" + touch_up + 

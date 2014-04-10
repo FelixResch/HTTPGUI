@@ -53,7 +53,7 @@ public class ActionManager {
 					is_params = true;
 				}
 			}
-			if (args.length - (is_params ? 1 : 0) != cmdArgs.length) {
+			if (args.length - (is_params ? 1 : 0) != cmdArgs.length && !(cmdArgs[0].equals("undefined"))) {
 				updates.addUpdate("messages", HTMLCompiler.compileObject(
 						new Warning("Arg count doesn't match"), browser));
 				return updates;
@@ -63,7 +63,7 @@ public class ActionManager {
 				for (int i = 0; i < args.length; i++) {
 					if(args[i].startsWith("params")) {
 						params = args[i].split("=")[1];
-					} else if (!args[i].split("=")[0].equals(cmdArgs[i])) {
+					} else if (!args[i].split("=")[0].equals(cmdArgs[i]) && !(cmdArgs[0].equals("undefined"))) {
 						Session.logger.warn("Needed: " + cmdArgs[i] + " Found: " + args[i].split("=")[0]);
 						updates.addUpdate("messages", HTMLCompiler.compileObject(
 								new Warning("Args order is wrong " + target + " needed: " + Arrays.toString(cmdArgs)), browser));
@@ -75,7 +75,7 @@ public class ActionManager {
 			Method method = action.getMethod();
 			Object executeOn = action.getExecuteOn();
 			try {
-				if (args.length == 0)
+				if (args.length  - (is_params ? 1 : 0) == 0)
 					if(is_params)
 						method.invoke(executeOn, updates, params);
 					else

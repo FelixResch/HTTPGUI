@@ -152,6 +152,9 @@ public class HTMLCompiler {
 		e.addObject(html);
 		HEAD head = new HEAD();
 		head.addObject(new TITLE(p.title()));
+		SCRIPT script = new SCRIPT();
+		script.setType("text/javascript");
+		script.setSrc("http://code.jquery.com/jquery-1.10.1.min.js");
 		if(p.style() == Style.IVORY) {
 			head.addObject(new LINK(new HTMLAttribute("rel", "stylesheet"),
 					new HTMLAttribute("type", "text/css"), new HTMLAttribute(
@@ -160,16 +163,13 @@ public class HTMLCompiler {
 			head.addObject(new LINK(new HTMLAttribute("rel", "stylesheet"),
 					new HTMLAttribute("type", "text/css"), new HTMLAttribute(
 							"href", "/res/bootstrap/css/bootstrap.css")));
-			SCRIPT script = new SCRIPT();
-			script.setType("text/javascript");
-			script.setSrc("http://code.jquery.com/jquery-1.10.1.min.js");
 			head.addObject(script);
 			script = new SCRIPT();
 			script.setType("text/javascript");
 			script.setSrc("/res/bootstrap/js/bootstrap.js");
 			head.addObject(script);
 		}
-		SCRIPT script = new SCRIPT();
+		script = new SCRIPT();
 		script.setType("text/javascript");
 		script.setSrc("/script/");
 		head.addObject(script);

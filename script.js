@@ -65,6 +65,9 @@ function invokeAction(eventName, params) {
                                 surface.removeEventListener("touchmove", surface.touch_ui.touchmove);
                                 surface.removeEventListener("touchend", surface.touch_ui.touchend);
                             }
+                        } else if (element == "invoke") {
+                            var front = JSON.parse(html);
+                            invokeActionManual(front.element, front.params, front.param);
                         } else {
                             document.getElementById(element).innerHTML = html;
                         }
@@ -89,6 +92,78 @@ function invokeAction(eventName, params) {
             document.getElementById("messages").innerHTML = "";
         }
     }
+}
+
+function invokeActionManual(eventName, elements, params) {
+    var index;
+    var args = elements;
+    var arg_i;
+    var req = "/action/invoke/";
+    var param = eventName;
+    for (arg_i = 0; arg_i < args.length; arg_i++) {
+        if (document.getElementById(args[arg_i]) !== null) {
+            param += "&" + args[arg_i] + "=" + document.getElementById(args[arg_i]).value;
+        } else {
+            param += "&" + args[arg_i] + "=null";
+        }
+    }
+    if (params !== undefined) {
+        param += "&params="+params;
+    }
+    var xmlhttp;
+    if (window.XMLHttpRequest) {
+        xmlhttp = new XMLHttpRequest();
+    } else {
+        xmlhttp = new ActiveXElement("Microsoft.XMLHTTP");
+    }
+    document.getElementById("ajax_progress").style.display = 'block';
+    xmlhttp.onreadystatechange = function() {
+        if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+            var pack = JSON.parse(xmlhttp.responseText);
+            var updates = pack.updates;
+            var index;
+            document.getElementById("ajax_progress").style.display = 'none';
+            document.getElementById("ajax_progress").value = 0;
+            for (index = 0; index < updates.length; index++) {
+                var element = updates[index].element;
+                var html = updates[index].html;
+                if (element == "title") {
+                    document.title = html;
+                } else if (element == "touch") {
+                    html = JSON.parse(html);
+                    activateSwipe(html.element, html.calls);
+                } else if (element == "untouch") {
+                    var surface = document.getElementById(html);
+                    if (surface.touch_ui !== undefined) {
+                        surface.removeEventListener("touchstart", surface.touch_ui.touchstart);
+                        surface.removeEventListener("touchmove", surface.touch_ui.touchmove);
+                        surface.removeEventListener("touchend", surface.touch_ui.touchend);
+                    }
+                } else if (element == "invoke") {
+                    var front = JSON.parse(html);
+                    invokeActionManual(front.element, front.params, front.param);
+                } else {
+                    document.getElementById(element).innerHTML = html;
+                }
+            }
+            window.scroll(0, 0);
+            var fade_;
+            window.setTimeout(function () {
+                $('#messages').contents().each(function (i) {
+                        $(this).fadeTo(1000, 0);
+                });
+            }, 2000);
+            window.setTimeout(function () {
+                document.getElementById('messages').innerHTML = '';
+                window.clearInterval(fade_);
+            }, 3000);
+        }
+        document.getElementById("ajax_progress").value = xmlhttp.readyState;
+    };
+    xmlhttp.open("POST", req, true);
+    xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+    xmlhttp.send(param);
+    document.getElementById("messages").innerHTML = "";
 }
 
 function activateSwipe(element, calls) {
