@@ -1,6 +1,8 @@
 package at.resch.html;
 
-public class HTMLAttribute {
+import java.io.Serializable;
+
+public class HTMLAttribute implements Serializable {
 
 	private String name;
 	private String value;

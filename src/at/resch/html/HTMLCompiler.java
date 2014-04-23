@@ -101,8 +101,9 @@ public class HTMLCompiler {
 					continue;
 				if (method.getParameterTypes()[0] == HTMLElement.class
 						&& method.isAnnotationPresent(Content.class)) {
-					if(method.isAnnotationPresent(CompilerWeight.class)) {
-						CompilerWeight cw = method.getAnnotation(CompilerWeight.class);
+					if (method.isAnnotationPresent(CompilerWeight.class)) {
+						CompilerWeight cw = method
+								.getAnnotation(CompilerWeight.class);
 						content.put(cw.value(), method);
 						num = cw.value() + 1;
 					} else {
@@ -111,7 +112,7 @@ public class HTMLCompiler {
 					}
 				}
 			}
-			for(Method method : content.values()) {
+			for (Method method : content.values()) {
 				Content c = method.getAnnotation(Content.class);
 				Class<?> parent = c.parent();
 				if (HTMLElement.class.isAssignableFrom(parent)) {
@@ -125,8 +126,7 @@ public class HTMLCompiler {
 						}
 						first = false;
 						html.addObject(h);
-					} catch (InstantiationException
-							| IllegalAccessException
+					} catch (InstantiationException | IllegalAccessException
 							| IllegalArgumentException
 							| InvocationTargetException e1) {
 						e1.printStackTrace();
@@ -155,31 +155,36 @@ public class HTMLCompiler {
 			e.addObject(html);
 			HEAD head = new HEAD();
 			head.addObject(new TITLE(p.title()));
-			if(p.style() == Style.IVORY) {
+			SCRIPT script = new SCRIPT();
+			script.setType("text/javascript");
+			script.setSrc("http://code.jquery.com/jquery-1.10.1.min.js");
+			if (p.style() == Style.IVORY) {
 				head.addObject(new LINK(new HTMLAttribute("rel", "stylesheet"),
-						new HTMLAttribute("type", "text/css"), new HTMLAttribute(
-								"href", "/css/" + p.style())));
+						new HTMLAttribute("type", "text/css"),
+						new HTMLAttribute("href", "/css/" + p.style())));
 			} else if (p.style() == Style.BOOTSTRAP_DEFAULT) {
 				head.addObject(new LINK(new HTMLAttribute("rel", "stylesheet"),
-						new HTMLAttribute("type", "text/css"), new HTMLAttribute(
-								"href", "/res/bootstrap/css/bootstrap.css")));
-				SCRIPT script = new SCRIPT();
-				script.setType("text/javascript");
-				script.setSrc("http://code.jquery.com/jquery-1.10.1.min.js");
+						new HTMLAttribute("type", "text/css"),
+						new HTMLAttribute("href",
+								"/res/bootstrap/css/bootstrap.css")));
 				head.addObject(script);
 				script = new SCRIPT();
 				script.setType("text/javascript");
 				script.setSrc("/res/bootstrap/js/bootstrap.js");
 				head.addObject(script);
 			}
-			SCRIPT script = new SCRIPT();
+			script = new SCRIPT();
 			script.setType("text/javascript");
 			script.setSrc("/script/");
 			head.addObject(script);
-			head.addObject(new STYLE("progress, progress[role] {  -webkit-appearence: none;-moz-appearence: none;appearence: none;border: none;background-size: auto;width: 80%;float: center;height: 2px;}  progress[role]:after {background-image: none;}progress[role] strong {display: none;}progress,progress[role][aria-valuenow] {background: #EBEBE0 !important;}progress {color: blue;}progress::-webkit-progress-bar { background: #EBEBE0;}  progress::-webkit-progress-value {  background: #00CCFF;}  progress::-moz-progress-bar {  background: #00CCFF;}.job {border: 1px #EBEBE0 solid;text-align: center;width: 60%;}.message {width: 300px;float: right;padding: 10px;position: absolute;} .ajax_load {position: absolute; padding: 0px; border: none; margin: 0px; width: 100%; height: 2px}"));
+			head.addObject(new STYLE(
+					"progress, progress[role] {  -webkit-appearence: none;-moz-appearence: none;appearence: none;border: none;background-size: auto;width: 80%;float: center;height: 2px;}  progress[role]:after {background-image: none;}progress[role] strong {display: none;}progress,progress[role][aria-valuenow] {background: #EBEBE0 !important;}progress {color: blue;}progress::-webkit-progress-bar { background: #EBEBE0;}  progress::-webkit-progress-value {  background: #00CCFF;}  progress::-moz-progress-bar {  background: #00CCFF;}.job {border: 1px #EBEBE0 solid;text-align: center;width: 60%;}.message {width: 300px;float: right;padding: 10px;position: absolute;} .ajax_load {position: absolute; padding: 0px; border: none; margin: 0px; width: 100%; height: 2px}"));
 			html.addObject(head);
 			BODY body = new BODY();
-			body.addAttribute(new HTMLAttribute("onload", "loadActionList();"));
+			String onload = "loadActionList();";
+			if(!p.onload().equals("udef"))
+				onload = "loadActionList('" + p.onload() + "');";
+			body.addAttribute(new HTMLAttribute("onload", onload));
 			PROGRESS progress = new PROGRESS();
 			progress.setValue("2");
 			progress.setMax("4");
@@ -190,6 +195,7 @@ public class HTMLCompiler {
 			messages.setId("messages");
 			body.addObject(progress);
 			body.addObject(messages);
+			Session.getCurrent().setBody(body);
 			boolean first = true;
 			TreeMap<Double, Method> content = new TreeMap<>();
 			double num = 0;
@@ -198,8 +204,9 @@ public class HTMLCompiler {
 					continue;
 				if (method.getParameterTypes()[0] == HTMLElement.class
 						&& method.isAnnotationPresent(Content.class)) {
-					if(method.isAnnotationPresent(CompilerWeight.class)) {
-						CompilerWeight cw = method.getAnnotation(CompilerWeight.class);
+					if (method.isAnnotationPresent(CompilerWeight.class)) {
+						CompilerWeight cw = method
+								.getAnnotation(CompilerWeight.class);
 						content.put(cw.value(), method);
 						num = cw.value() + 1;
 					} else {
@@ -208,7 +215,8 @@ public class HTMLCompiler {
 					}
 				}
 			}
-			for(Method method : content.values()) {
+
+			for (Method method : content.values()) {
 				Content c = method.getAnnotation(Content.class);
 				Class<?> parent = c.parent();
 				if (HTMLElement.class.isAssignableFrom(parent)) {
@@ -225,12 +233,14 @@ public class HTMLCompiler {
 					} catch (InstantiationException | IllegalAccessException
 							| IllegalArgumentException
 							| InvocationTargetException e1) {
-						StackErrorPage sep = new StackErrorPage(e1, "Some target");
+						StackErrorPage sep = new StackErrorPage(e1,
+								"Some target");
 						return HTMLCompiler.compilePage(sep);
 					}
 
 				}
 			}
+			//body.addObject(Session.getCompiledPartial("footer"));
 			html.addObject(body);
 			return e;
 		} catch (Exception e) {
@@ -263,7 +273,8 @@ public class HTMLCompiler {
 				for (Object e : ((HTMLElement) o).getChildren()) {
 					if (e instanceof BODY) {
 						BODY body = (BODY) e;
-						((BODY) e).addObject(new Warning("You are using an incompatible Browser"));
+						((BODY) e).addObject(new Warning(
+								"You are using an incompatible Browser"));
 					}
 				}
 			}

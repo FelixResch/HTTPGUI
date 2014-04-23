@@ -10,7 +10,9 @@ import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.UnsupportedCharsetException;
 import java.security.KeyStore;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Set;
 
@@ -19,7 +21,9 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocketFactory;
 
+import org.apache.commons.logging.impl.Log4JLogger;
 import org.apache.http.ConnectionClosedException;
+import org.apache.http.Header;
 import org.apache.http.HttpConnectionFactory;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
@@ -50,15 +54,20 @@ import org.apache.http.protocol.ResponseServer;
 import org.apache.http.protocol.UriHttpRequestHandlerMapper;
 import org.apache.http.util.EntityUtils;
 import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.reflections.Reflections;
 
+import at.resch.html.HTMLCompiler;
 import at.resch.html.annotations.CustomHandler;
 import at.resch.html.annotations.Identifier;
 import at.resch.html.annotations.Location;
 import at.resch.html.annotations.Page;
 import at.resch.html.annotations.Partial;
+import at.resch.html.components.Warning;
 import at.resch.html.enums.Browsers;
+import at.resch.html.events.Updates;
+import at.resch.html.extensions.TimeJobs;
 import at.resch.html.server.util.UserAgentParser;
 import at.resch.html.test.TestPage;
 
@@ -67,6 +76,8 @@ public class HTTPGUIServer {
 	
 	private static final Logger log = Logger.getLogger(HTTPGUIServer.class);
 	private static final String SECURITY_TOKEN = "ASuas55f3edfjfg55hert4ykzt5b4df54hdf";
+	
+	private static TimeJobs jobService;
 	
 	static class MainHandler implements HttpRequestHandler {
 
@@ -91,11 +102,34 @@ public class HTTPGUIServer {
 				System.out.println("Incoming entity content (bytes): "
 						+ entityContent.length);
 			}
-
-			String html = Session.create().getPage(target, browser);
-			response.setEntity(new StringEntity(html, ContentType.TEXT_HTML));
-
-			response.setStatusCode(200);
+			String token = null;
+			try {
+				if(request.containsHeader("Cookie")) {
+					Header[] cookies = request.getHeaders("Cookie");
+					for (Header header : cookies) {
+						String[] cookies_ = header.getValue().split(";");
+						for(int i = 0; i < cookies_.length; i++) {
+							String cookie = cookies_[i].trim();
+							if(cookie.startsWith("session.token")) {
+								token = cookie.split("=")[1];
+							}
+						}
+					}
+				}
+			} catch (Exception e1) {
+				Session.logger.fatal("Couldn't read session token", e1);
+			}
+			try {
+				String html = Session.create(token).getPage(target, browser);
+				response.addHeader("Set-Cookie", "session.token=" + Session.getCurrent().get("session.token"));
+				response.setEntity(new StringEntity(html, ContentType.TEXT_HTML));
+				response.setStatusCode(200);
+			} catch (UnsupportedCharsetException | IllegalStateException
+					| SessionRestoredException e) {
+				String html = HTMLCompiler.compileObject(Session.getPageInstance("relpls"), browser);
+				response.setEntity(new StringEntity(html, ContentType.TEXT_HTML));
+				response.setStatusCode(500);
+			}
 		}
 	}
 	
@@ -117,6 +151,14 @@ public class HTTPGUIServer {
 			}
 			if(target.equals("/control/shutdown/" + SECURITY_TOKEN)) {
 				log.warn("Server is going down for reboot");
+				long timestamp = System.currentTimeMillis();
+				HashMap<String, Session> sessions = Session.getSessions();
+				for(String key : sessions.keySet()) {
+					if(key.equals("main"))
+						continue;
+					Session s = sessions.get(key);
+					SessionCleanupJob.persitSession(s, key, timestamp);
+				}
 				System.exit(0);
 			}
 		}
@@ -138,27 +180,52 @@ public class HTTPGUIServer {
 			String target = request.getRequestLine().getUri();
 			String userAgent = request.getFirstHeader("User-Agent").getValue();
 			Browsers browser = UserAgentParser.parseUserAgent(userAgent);
-			StringEntity str_entity = null;
-			if (request instanceof HttpEntityEnclosingRequest) {
-				HttpEntity entity = ((HttpEntityEnclosingRequest) request)
-						.getEntity();
-				byte[] entityContent = EntityUtils.toByteArray(entity);
-				str_entity = new StringEntity(new String(entityContent));
+			String token = null;
+			try {
+				if(request.containsHeader("Cookie")) {
+					Header[] cookies = request.getHeaders("Cookie");
+					for (Header header : cookies) {
+						String[] cookies_ = header.getValue().split(";");
+						for(int i = 0; i < cookies_.length; i++) {
+							String cookie = cookies_[i].trim();
+							if(cookie.startsWith("session.token")) {
+								token = cookie.split("=")[1];
+							}
+						}
+					}
+				}
+			} catch (Exception e1) {
+				Session.logger.fatal("Couldn't read session token", e1);
 			}
-			if(target.equals("/action/get/list/")) {
-				System.out.println("Transmitting Action List for Session " + Session.getCurrent().get("client.address"));
-				log.info("Transmitting Action List for Session " + Session.getCurrent().get("client.address"));
-				String json = Session.getCurrent().getActionManager().getActions();
+			try {
+				Session.create(token);
+				StringEntity str_entity = null;
+				if (request instanceof HttpEntityEnclosingRequest) {
+					HttpEntity entity = ((HttpEntityEnclosingRequest) request)
+							.getEntity();
+					byte[] entityContent = EntityUtils.toByteArray(entity);
+					str_entity = new StringEntity(new String(entityContent));
+				}
+				if(target.equals("/action/get/list/")) {
+					log.info("Transmitting Action List for Session " + Session.getCurrent().get("client.address"));
+					String json = Session.getCurrent().getActionManager().getActions();
+					response.setEntity(new StringEntity(json, ContentType.APPLICATION_JSON));
+					response.setStatusCode(200);
+					return;
+				} else if (target.startsWith("/action/invoke/")){
+					BufferedReader in = new BufferedReader(new InputStreamReader(str_entity.getContent()));
+					String action = in.readLine();
+					String json = Session.getCurrent().getActionManager().invokeAction(action, browser).getJSON();
+					response.setEntity(new StringEntity(json, ContentType.APPLICATION_JSON));
+					response.setStatusCode(200);
+					return;
+				}
+			} catch (SessionRestoredException e) {
+				Updates u = new Updates();
+				u.addUpdate("messages", new Warning("Session expired. Please reload Page").renderHTML());
+				String json = u.getJSON();
 				response.setEntity(new StringEntity(json, ContentType.APPLICATION_JSON));
 				response.setStatusCode(200);
-				return;
-			} else if (target.startsWith("/action/invoke/")){
-				BufferedReader in = new BufferedReader(new InputStreamReader(str_entity.getContent()));
-				String action = in.readLine();
-				String json = Session.getCurrent().getActionManager().invokeAction(action, browser).getJSON();
-				response.setEntity(new StringEntity(json, ContentType.APPLICATION_JSON));
-				response.setStatusCode(200);
-				return;
 			}
 		}
 	}
@@ -211,6 +278,8 @@ public class HTTPGUIServer {
 					CustomHandler i = class1.getAnnotation(CustomHandler.class);
 					String id = i.value();
 					Object o = class1.newInstance();
+					if(class1.equals(TimeJobs.class))
+						jobService = (TimeJobs) o;
 					if(o instanceof HttpRequestHandler)
 						registry.register(id, (HttpRequestHandler) o);
 				} catch (InstantiationException | IllegalAccessException e) {
@@ -224,8 +293,8 @@ public class HTTPGUIServer {
 	public static void start() throws Exception {
 		int port = 8080;
 
-		Session session = Session.getCurrent();
-		session.addLocatable(new TestPage());
+//		Session session = Session.getCurrent();
+//		session.addLocatable(new TestPage());
 
 		HttpProcessor httpproc = HttpProcessorBuilder.create()
 				.add(new ResponseDate()).add(new ResponseServer("Test/1.1"))
@@ -240,7 +309,7 @@ public class HTTPGUIServer {
 		registry.register("/script/", new ScriptHandler());
 		addCustomHandlers(registry);
 		registry.register("/*", new MainHandler());
-
+		
 		// Set up the HTTP service
 		HttpService httpService = new HttpService(httpproc, registry);
 
@@ -325,8 +394,8 @@ public class HTTPGUIServer {
 
 		@Override
 		public void run() {
-			if(!Session.exists())
-				Session.create();
+//			if(!Session.exists())
+//				Session.create();
 			HttpContext context = new BasicHttpContext(null);
 			try {
 				while (!Thread.interrupted() && this.conn.isOpen()) {
@@ -349,6 +418,7 @@ public class HTTPGUIServer {
 
 	public static void main(String[] args) {
 		BasicConfigurator.configure();
+		Logger.getRootLogger().setLevel(Level.INFO);
 		try {
 			listAllClasses();
 			start();
@@ -373,6 +443,10 @@ public class HTTPGUIServer {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	public static TimeJobs getJobService() {
+		return jobService;
 	}
 
 }

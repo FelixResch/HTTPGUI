@@ -15,4 +15,5 @@ public @interface Page {
 	public String title() default "some_page";
 	public Style style() default Style.IVORY;
 	public Class<?> delimiter () default HR.class;
+	public String onload() default "udef";
 }

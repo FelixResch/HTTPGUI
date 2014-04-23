@@ -3,6 +3,7 @@ package at.resch.html.events;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 
@@ -53,17 +54,21 @@ public class ActionManager {
 					is_params = true;
 				}
 			}
-			if (args.length - (is_params ? 1 : 0) != cmdArgs.length) {
+			if (args.length - (is_params ? 1 : 0) != cmdArgs.length && !(cmdArgs[0].equals("undefined"))) {
 				updates.addUpdate("messages", HTMLCompiler.compileObject(
 						new Warning("Arg count doesn't match"), browser));
 				return updates;
+			}
+			boolean udef = false;
+			if(cmdArgs.length == 1 && cmdArgs[0].equals("undefined")) {
+				udef = true;
 			}
 			String params = null;
 			if (args.length != 0)
 				for (int i = 0; i < args.length; i++) {
 					if(args[i].startsWith("params")) {
 						params = args[i].split("=")[1];
-					} else if (!args[i].split("=")[0].equals(cmdArgs[i])) {
+					} else if (!args[i].split("=")[0].equals(cmdArgs[!udef ? i : 0]) && !(udef)) {
 						Session.logger.warn("Needed: " + cmdArgs[i] + " Found: " + args[i].split("=")[0]);
 						updates.addUpdate("messages", HTMLCompiler.compileObject(
 								new Warning("Args order is wrong " + target + " needed: " + Arrays.toString(cmdArgs)), browser));
@@ -74,8 +79,9 @@ public class ActionManager {
 				}
 			Method method = action.getMethod();
 			Object executeOn = action.getExecuteOn();
+			Session.performInjection(executeOn);
 			try {
-				if (args.length == 0)
+				if (args.length  - (is_params ? 1 : 0) == 0)
 					if(is_params)
 						method.invoke(executeOn, updates, params);
 					else
@@ -96,7 +102,7 @@ public class ActionManager {
 						new Warning("Some error happened:" + e.getMessage()),
 						browser));
 			} catch (InvocationTargetException e) {
-				e.printStackTrace();
+				Session.logger.fatal("Couldn't execute Action: " + target, e);
 				updates.addUpdate("messages", HTMLCompiler.compileObject(
 						new Warning("Some error happened:" + e.getMessage()),
 						browser));
@@ -129,6 +135,10 @@ public class ActionManager {
 		}
 		actions += "]}";
 		return actions;
+	}
+	
+	public Collection<Action> getActionSet() {
+		return actions.values();
 	}
 
 }

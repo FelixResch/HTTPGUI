@@ -112,6 +112,8 @@ public class ResourceHandler implements HttpRequestHandler {
 				contentType = "text/css";
 			else if (key.endsWith("js"))
 				contentType = "text/javascript";
+			else if (key.endsWith("woff"))
+				contentType = "application/x-woff";
 			StringEntity entity = new StringEntity(new String(contents.get(key)), ContentType.parse(contentType));
 			response.setEntity(entity);
 			response.setStatusCode(200);

@@ -63,14 +63,14 @@ public abstract class HTMLElement extends HTMLObject {
 		super(tagName);
 	}
 
-	protected void set(String name, String value) {
+	public void set(String name, String value) {
 		if(value == null)
 			removeAttribute(name);
 		else
 			addAttribute(new HTMLAttribute(name, value));
 	}
 	
-	protected String get(String name) {
+	public String get(String name) {
 		HTMLAttribute a = getAttribute(name);
 		if(a != null)
 			return a.getValue();

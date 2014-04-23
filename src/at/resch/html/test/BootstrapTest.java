@@ -7,8 +7,12 @@ import at.resch.html.annotations.Identifier;
 import at.resch.html.annotations.Location;
 import at.resch.html.annotations.Page;
 import at.resch.html.components.ContentManager;
+import at.resch.html.components.HDataTable;
 import at.resch.html.components.Warning;
+import at.resch.html.components.models.ColumnDefinition;
+import at.resch.html.components.models.TableModel;
 import at.resch.html.elements.A;
+import at.resch.html.elements.BR;
 import at.resch.html.elements.DIV;
 import at.resch.html.elements.H1;
 import at.resch.html.elements.HTMLElement;
@@ -18,6 +22,7 @@ import at.resch.html.elements.UL;
 import at.resch.html.enums.MessageType;
 import at.resch.html.enums.Style;
 import at.resch.html.events.Updates;
+import at.resch.html.server.Session;
 
 @Page(title="Bootstrap Test", style=Style.BOOTSTRAP_DEFAULT)
 @Identifier("bootstrap_test")
@@ -55,11 +60,21 @@ public class BootstrapTest {
 		btn.setStyleClass("btn btn-large btn-success");
 		btn.addObject("Get Started");
 		hero_unit.addObject(btn);
+		TableModel tm = new TableModel(new ColumnDefinition[] {new ColumnDefinition("Name"), new ColumnDefinition("Age")});
+		HDataTable table = new HDataTable("table", tm);
+		table.getModel().addRow("Felix", "17");
+		table.getModel().addRow("Something", "Somewhen");
+		table.revalidate();
+		hero_unit.addObject(new BR());
+		hero_unit.addObject(Session.getCurrent().get("session.token"));
+		hero_unit.addObject(new BR());
+		hero_unit.addObject(new BR());
+		hero_unit.addObject(table);
 		html.addObject(hero_unit);
 	}
 	
 	@Action(name="nav_action", args={})
-	public void navAction(Updates updates, String[] args, String param) {
+	public void navAction(Updates updates, String param) {
 		ContentManager.addMessage(MessageType.INFO, param);
 	}
 	

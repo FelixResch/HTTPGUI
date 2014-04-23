@@ -1,5 +1,6 @@
 package at.resch.html;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -16,7 +17,12 @@ import at.resch.html.elements.TITLE;
 import at.resch.html.enums.Mode;
 import at.resch.html.annotations.RenderMode;
 
-public class HTMLObject {
+public class HTMLObject implements Serializable{
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -6406003066669240539L;
 
 	private String tagName;
 
@@ -84,6 +90,10 @@ public class HTMLObject {
 	public void addObject(Object a) {
 		children.add(a);
 	}
+	
+	public void clearChildren() {
+		children.clear();
+	}
 
 	public String renderHTML() {
 		String ret = "";
@@ -133,6 +143,8 @@ public class HTMLObject {
 					continue;
 				if (html instanceof HTMLObject) {
 					ret += ((HTMLObject) html).renderHTML() + "\n";
+				} else if (html == null){
+					continue;
 				} else {
 					ret += html.toString() + "\n";
 				}

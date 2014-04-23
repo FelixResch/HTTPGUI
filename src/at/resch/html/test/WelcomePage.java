@@ -4,6 +4,7 @@ import at.resch.html.annotations.Action;
 import at.resch.html.annotations.CompilerWeight;
 import at.resch.html.annotations.Content;
 import at.resch.html.annotations.Identifier;
+import at.resch.html.annotations.Inject;
 import at.resch.html.annotations.Location;
 import at.resch.html.annotations.Page;
 import at.resch.html.annotations.Priority;
@@ -22,9 +23,13 @@ import at.resch.html.server.Session;
 @Page(title="Welcome")
 @Identifier("welcome")
 @Priority(at.resch.html.enums.Priority.VENDOR)
+@Location(path="/welcome")
 public class WelcomePage {
 	
 	private int counter = 0;
+	
+	@Inject("client.address")
+	public String client_address;
 
 	@Content
 	@CompilerWeight(1)
@@ -40,7 +45,7 @@ public class WelcomePage {
 		html.addObject(p);
 		html.addObject(new BR());
 		p.setId("counter");
-		html.addObject(Session.getCurrent().get("client.address"));
+		html.addObject(client_address);
 		Session.getCurrent().store("welcome.string", "You have been welcomed");
 	}
 	
