@@ -15,6 +15,7 @@ public class HButton extends HComponent<A>{
 	public static final String BUTTON_INFO = "btn-primary";
 	public static final String BUTTON_INVERSE = "btn-primary";
 	
+	private boolean buttonBlock = false;
 	private String buttonSize = "";
 	private String buttonType = "";
 	
@@ -43,7 +44,17 @@ public class HButton extends HComponent<A>{
 	}
 	
 	protected void updateStyleClasses() {
-		setStyleClass("btn" + " " + buttonType + " " + buttonSize);
+		setStyleClass("btn" + " " + buttonType + " " + buttonSize + (buttonBlock ? " btn-block" : ""));
+	}
+
+
+	public boolean isButtonBlock() {
+		return buttonBlock;
+	}
+
+
+	public void setButtonBlock(boolean buttonBlock) {
+		this.buttonBlock = buttonBlock;
 	}
 
 }

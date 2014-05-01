@@ -17,10 +17,10 @@ import at.resch.html.elements.P;
 import at.resch.html.events.Updates;
 import at.resch.html.server.Session;
 
-@Page(title="User Authentication")
-@Identifier("index")
-@Priority
-@Location(path="/")
+//@Page(title="User Authentication")
+//@Identifier("index")
+//@Priority(at.resch.html.enums.Priority.STANDARD)
+//@Location(path="/")
 public class IndexPage {
 	
 	@Content

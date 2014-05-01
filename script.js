@@ -92,7 +92,7 @@ function invokeAction(eventName, params, event) {
 			var param = action.action;
 			for (arg_i = 0; arg_i < args.length; arg_i++) {
 				if (document.getElementById(args[arg_i].Arg) !== null) {
-					var elem = document.getElementById(args[arg_i]);
+					var elem = document.getElementById(args[arg_i].Arg);
 					if (elem.value == null || elem.value == undefined
 							|| elem.value == "") {
 						param += "&"

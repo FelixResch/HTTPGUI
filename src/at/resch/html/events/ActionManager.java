@@ -74,7 +74,10 @@ public class ActionManager {
 								new Warning("Args order is wrong " + target + " needed: " + Arrays.toString(cmdArgs)), browser));
 						return updates;
 					} else {
-						args[i] = args[i].split("=")[1];
+						if(args[i].contains("="))
+							args[i] = args[i].split("=")[1];
+						else
+							args[i] = "";
 					}
 				}
 			Method method = action.getMethod();

@@ -4,7 +4,7 @@ public class DefaultConverter implements ValueConverter {
 
 	@Override
 	public String convert(Object o) {
-		return o.toString();
+		return o == null ? "NULL" : o.toString();
 	}
 
 }

@@ -22,6 +22,7 @@
 	<classpathentry kind="lib" path="jar/log4j-1.2.17.jar"/>
 	<classpathentry kind="lib" path="jar/mysql-connector-java-5.1.29-bin.jar"/>
 	<classpathentry kind="lib" path="jar/xz.jar"/>
+	<classpathentry kind="lib" path="jar/java_websocket.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

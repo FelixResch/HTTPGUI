@@ -1,5 +1,7 @@
 package at.resch.html.components;
 
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.List;
 
@@ -177,6 +179,20 @@ public class ContentManager {
 
 	public static void disableTouch(String id) {
 		Session.getCurrent().getUpdates().addUpdate("untouch", id);
+	}
+	
+	public static void connectToJDBCDB(String ressource, String driver, String host, String port, String username, String password, String database) {
+		try {
+			Class.forName(driver);
+		} catch (ClassNotFoundException e) {
+			Session.logger.fatal("Couldn't load JDBC Driver. Are you sure you put the jar-File on the classpath", e);
+		}
+		try {
+			Session.getCurrent().store(ressource, DriverManager.getConnection("jdbc:mysql://" + host + ":"
+					+ port + "/" + database, username, password));
+		} catch (SQLException e) {
+			Session.logger.fatal("Couldn't connect to the Server", e);
+		}
 	}
 
 }

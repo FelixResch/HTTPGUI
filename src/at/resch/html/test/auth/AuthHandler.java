@@ -18,6 +18,7 @@ import org.apache.http.protocol.HttpRequestHandler;
 import org.apache.http.util.EntityUtils;
 
 import at.resch.html.annotations.CustomHandler;
+import at.resch.html.server.Session;
 
 @CustomHandler("/auth/*")
 public class AuthHandler implements HttpRequestHandler {
@@ -67,6 +68,42 @@ public class AuthHandler implements HttpRequestHandler {
 						ContentType.TEXT_HTML);
 				response.setEntity(entity);
 				response.setStatusCode(200);
+				return;
+			} else if (target.startsWith("/auth/i/")) {
+				String req = target.substring(target.lastIndexOf("/") + 1);
+				String token = req.split(";")[0];
+				String uname = req.split(";")[1];
+				String iname = req.split(";")[2];
+				DBBackend.init();
+				try {
+					if (DBBackend.authenticateToken(uname, token).equals("1")) {
+						String content_ = DBBackend.getInfo(uname, iname);
+						StringEntity entity_ = new StringEntity(content_,
+								ContentType.parse("text/json"));
+						response.setEntity(entity_);
+						response.setStatusCode(200);
+					}
+				} catch (SQLException e) {
+					Session.logger.warn("Authetication failed", e);
+					response.setStatusCode(500);
+				}
+				return;
+			} else if (target.startsWith("/auth/s/")) {
+				String req = target.substring(target.lastIndexOf("/") + 1);
+				String token = req.split(";")[0];
+				String uname = req.split(";")[1];
+				String iname = req.split(";")[2];
+				String value = req.split(";")[3];
+				DBBackend.init();
+				try {
+					if (DBBackend.authenticateToken(uname, token).equals("1")) {
+						DBBackend.setInfo(uname, iname, value);
+						response.setStatusCode(200);
+					}
+				} catch (SQLException e) {
+					Session.logger.warn("Authetication failed", e);
+					response.setStatusCode(500);
+				}
 				return;
 			} else {
 				String uname = target.split("/")[2];

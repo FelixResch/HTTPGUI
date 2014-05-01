@@ -6,12 +6,16 @@ import at.resch.html.server.Session;
 
 public class TableModel {
 
-	private ColumnDefinition[] definition;
+	protected ColumnDefinition[] definition;
 
-	private ArrayList<TableRow> rows;
+	protected ArrayList<TableRow> rows;
 
 	public TableModel(ColumnDefinition[] definition) {
 		this.definition = definition;
+		rows = new ArrayList<>();
+	}
+	
+	protected TableModel() {
 		rows = new ArrayList<>();
 	}
 

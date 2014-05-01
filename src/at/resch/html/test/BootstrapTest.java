@@ -8,7 +8,7 @@ import at.resch.html.annotations.Location;
 import at.resch.html.annotations.Page;
 import at.resch.html.components.ContentManager;
 import at.resch.html.components.HDataTable;
-import at.resch.html.components.Warning;
+import at.resch.html.components.HSQLDataTable;
 import at.resch.html.components.models.ColumnDefinition;
 import at.resch.html.components.models.TableModel;
 import at.resch.html.elements.A;
@@ -65,11 +65,16 @@ public class BootstrapTest {
 		table.getModel().addRow("Felix", "17");
 		table.getModel().addRow("Something", "Somewhen");
 		table.revalidate();
+		ContentManager.connectToJDBCDB("mysqldb", "com.mysql.jdbc.Driver", "localhost", "3306", "root", "toor", "projektorg");
+		HSQLDataTable hsql = new HSQLDataTable("hsql_test", "select * from v_project_contribs", "mysqldb");
 		hero_unit.addObject(new BR());
 		hero_unit.addObject(Session.getCurrent().get("session.token"));
 		hero_unit.addObject(new BR());
 		hero_unit.addObject(new BR());
 		hero_unit.addObject(table);
+		hero_unit.addObject(new BR());
+		hero_unit.addObject(new BR());
+		hero_unit.addObject(hsql);
 		html.addObject(hero_unit);
 	}
 	
